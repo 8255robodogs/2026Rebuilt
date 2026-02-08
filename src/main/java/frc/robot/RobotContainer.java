@@ -1,10 +1,12 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.ClimberDownCmd;
-import frc.robot.commands.ClimberUpCmd;
-//import frc.robot.subsystems.ReefscapeAlgaeSubsystem;
 import frc.robot.subsystems.ReefscapeClimbSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.ConveyorSubsystem;
+import frc.robot.subsystems.LeftFlywheelSubsystem;
+import frc.robot.subsystems.RightFlywheelSubsystem;
+import frc.robot.subsystems.HarvestorSubsystem;
 import frc.robot.subsystems.ReefscapeElevatorSubsystem;
 import frc.robot.subsystems.ReefscapeHeadSubsystem;
 import frc.robot.subsystems.ReefscapeLEDSubsystem;
@@ -41,11 +43,17 @@ public class RobotContainer {
 
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem drivebase = new SwerveSubsystem();
-  private final ReefscapeElevatorSubsystem elevator = new ReefscapeElevatorSubsystem();
-  private final ReefscapeHeadSubsystem head = new ReefscapeHeadSubsystem();
+  //private final ReefscapeElevatorSubsystem elevator = new ReefscapeElevatorSubsystem();
+  //private final ReefscapeHeadSubsystem head = new ReefscapeHeadSubsystem();
   //private final ReefscapeAlgaeSubsystem algaeSystem = new ReefscapeAlgaeSubsystem();
-  private final ReefscapeClimbSubsystem climber = new ReefscapeClimbSubsystem();
-  private final ReefscapeLEDSubsystem leds = new ReefscapeLEDSubsystem();
+  //private final ReefscapeClimbSubsystem climber = new ReefscapeClimbSubsystem();
+  //private final ReefscapeLEDSubsystem leds = new ReefscapeLEDSubsystem();
+  
+  private final ConveyorSubsystem conveyor = new ConveyorSubsystem();
+  private final KickerSubsystem kicker = new KickerSubsystem();
+  private final LeftFlywheelSubsystem flyleft = new LeftFlywheelSubsystem();
+  private final RightFlywheelSubsystem flyright = new RightFlywheelSubsystem();
+  private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
 
   
 
@@ -101,8 +109,8 @@ public class RobotContainer {
 
     //this makes the drivebase drive. Very important.
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-    //hold X to lock the wheels and resist being pushed
-    m_driverController.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+    //hold b to lock the wheels and resist being pushed
+    m_driverController.b().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
     //press start to zero your heading
     m_driverController.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
     
@@ -119,64 +127,32 @@ public class RobotContainer {
     m_driverController.povUpLeft().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, -creepSpeed, 0.0));
 
 
-    //algae systems - collection and scoring
-    
-    // //Pressing Left Bumper will lower the algae harvester and turn on the wheels to suck algae in
-    // m_driverController.leftBumper().onTrue(algaeSystem.setAlgaeCollectorPistonExtended(true)
-    // .alongWith(algaeSystem.setAlgaeCollectorMotorSpeed(0.5)));
-    
-    // //Releasing Left Bumper will raise the algae harvester and reduce the wheels speed to just hold the algae
-    // m_driverController.leftBumper().onFalse(algaeSystem.setAlgaeCollectorPistonExtended(false)
-    // .alongWith(algaeSystem.setAlgaeCollectorMotorSpeed(0.1)));
-    
-    // //Pressing Left Trigger will set the algae harvester wheels in full reverse to spit the algae out
-    // m_driverController.leftTrigger(0.5).onTrue(algaeSystem.setAlgaeCollectorMotorSpeed(-1));
-    
-    // //Releasing Left Trigger will turn the algae harvester wheels off
-    // m_driverController.leftTrigger(0.5).onFalse(algaeSystem.setAlgaeCollectorMotorSpeed(0));
 
-    // //algae systems - remover tool
-    
-    // //toggle the remover
-    // m_driverController.y().onTrue(algaeSystem.toggleAlgaeRemover());
+
+    //Driver CONTROLLER (CONTROLLER zero)
 
     
     
+    //conveyor (2026)
+    m_driverController.rightBumper().onTrue(conveyor.setHeadSpeed(1));
+    m_driverController.rightBumper().onFalse(conveyor.setHeadSpeed(0));
 
+    //kicker (2026)
+    m_driverController.y().onTrue(kicker.setHeadSpeed(.9));
+    m_driverController.y().onFalse(kicker.setHeadSpeed(0));
+    m_driverController.rightBumper().onTrue(kicker.setHeadSpeed(-1));
+    m_driverController.rightBumper().onFalse(kicker.setHeadSpeed(0));
 
-    //OPERATOR CONTROLLER (CONTROLLER ONE)
+    //flywheel
+    m_driverController.leftBumper().onTrue(flyleft.setHeadSpeed(.7));
+    m_driverController.leftBumper().onFalse(flyleft.setHeadSpeed(0));
+    m_driverController.leftBumper().onTrue(flyright.setHeadSpeed(-.7));
+    m_driverController.leftBumper().onFalse(flyright.setHeadSpeed(0));
 
-    //elevator
-    m_operatorController.a().onTrue(elevator.setLevel(1));
-    m_operatorController.x().onTrue(elevator.setLevel(2));
-    m_operatorController.b().onTrue(elevator.setLevel(3));
-    m_operatorController.y().onTrue(elevator.setLevel(4)); 
-    
-    
+    //Harvestor
+    m_driverController.x().onTrue(harvestor.setHeadSpeed(.4));
+    m_driverController.x().onFalse(harvestor.setHeadSpeed(0));
 
-
-
-
-    //head
-    //head.setDefaultCommand(head.setHeadSpeedDefault(0));
-    m_operatorController.rightBumper().onTrue(head.setHeadSpeed(0.3));
-    m_operatorController.rightBumper().onFalse(head.setHeadSpeed(0));
-    m_operatorController.leftBumper().onTrue(head.setHeadSpeed(-0.3));
-    m_operatorController.leftBumper().onFalse(head.setHeadSpeed(0));
-    m_operatorController.rightTrigger(0.1).whileTrue(head.setHeadSpeed(m_operatorController.getRightTriggerAxis()));
-    m_operatorController.leftTrigger(0.1).whileTrue(head.setHeadSpeed(m_operatorController.getLeftTriggerAxis()*-1));
-
-    //climber
-    m_operatorController.start().onTrue(new ClimberUpCmd(climber));
-    m_operatorController.back().onTrue(new ClimberDownCmd(climber));
-
-
-
-
-    ///driver's head controls
-    /// //head coral motor
-    m_driverController.rightBumper().onTrue(head.setHeadSpeed(.5));
-    m_driverController.rightBumper().onFalse(head.setHeadSpeed(0));
 
   } 
 
@@ -200,8 +176,7 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     
-    
-
+/*
     if(m_autoChooser.getSelected() == "Left"){
       return 
       AutoBuilder.buildAuto("Test Auto")
@@ -308,7 +283,7 @@ public class RobotContainer {
         .andThen(new WaitCommand(2))
         .andThen(AutoBuilder.buildAuto("C3"));
     }
-
+*/
 
    
     return null;

@@ -292,14 +292,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public void periodic(){
 
     //write out our encoder angles to the console
-    System.out.println(
-    "Swerve angles: "+  
-    Math.round(swerveDrive.getModules()[0].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[1].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[2].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[3].getAbsolutePosition()) + ", " 
-
-    );
+    //writeSwerveAnglesToConsole();
 
 
     /* 
@@ -324,6 +317,18 @@ public class SwerveSubsystem extends SubsystemBase {
 
     
     //backward is +X  right is +Y
+  }
+
+
+  private void writeSwerveAnglesToConsole(){
+System.out.println(
+    "Swerve angles: "+  
+    Math.round(swerveDrive.getModules()[0].getAbsolutePosition()) + ", " +
+  Math.round(swerveDrive.getModules()[1].getAbsolutePosition()) + ", " +
+  Math.round(swerveDrive.getModules()[2].getAbsolutePosition()) + ", " +
+  Math.round(swerveDrive.getModules()[3].getAbsolutePosition()) + ", " 
+
+    );
   }
 
 }
