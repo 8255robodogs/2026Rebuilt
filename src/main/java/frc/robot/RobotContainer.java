@@ -1,22 +1,24 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.subsystems.ReefscapeClimbSubsystem;
+
+
+//import subsystems
+import frc.robot.subsystems.RebuiltShooterSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
-import frc.robot.subsystems.ConveyorSubsystem;
-import frc.robot.subsystems.LeftFlywheelSubsystem;
-import frc.robot.subsystems.RightFlywheelSubsystem;
+import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.HarvestorSubsystem;
-import frc.robot.subsystems.ReefscapeElevatorSubsystem;
-import frc.robot.subsystems.ReefscapeHeadSubsystem;
-import frc.robot.subsystems.ReefscapeLEDSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+
+//import yagsl
 import swervelib.SwerveInputStream;
 
+//import pathplanner
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathPlannerPath;
 
+//misc imports
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.cscore.VideoMode;
@@ -34,6 +36,7 @@ import edu.wpi.first.wpilibj2.command.button.POVButton;
 
 
 
+
 public class RobotContainer {
   
 
@@ -42,22 +45,13 @@ public class RobotContainer {
 
 
   // The robot's subsystems and commands are defined here...
-  private final SwerveSubsystem drivebase = new SwerveSubsystem();
-  //private final ReefscapeElevatorSubsystem elevator = new ReefscapeElevatorSubsystem();
-  //private final ReefscapeHeadSubsystem head = new ReefscapeHeadSubsystem();
-  //private final ReefscapeAlgaeSubsystem algaeSystem = new ReefscapeAlgaeSubsystem();
-  //private final ReefscapeClimbSubsystem climber = new ReefscapeClimbSubsystem();
-  //private final ReefscapeLEDSubsystem leds = new ReefscapeLEDSubsystem();
-  
-  private final ConveyorSubsystem conveyor = new ConveyorSubsystem();
-  private final KickerSubsystem kicker = new KickerSubsystem();
-  private final LeftFlywheelSubsystem flyleft = new LeftFlywheelSubsystem();
-  private final RightFlywheelSubsystem flyright = new RightFlywheelSubsystem();
+  private final LimelightSubsystem limelight = new LimelightSubsystem();
+  private final SwerveSubsystem drivebase = new SwerveSubsystem(limelight);
+  private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem();
   private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
 
   
-
-  //declare the controller
+  //declare the controllers
   private final CommandXboxController m_driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   private final CommandXboxController m_operatorController = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
   
@@ -79,6 +73,7 @@ public class RobotContainer {
   Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
   Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
+  
   CameraServer cameraServer;
   
   private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
@@ -95,7 +90,6 @@ public class RobotContainer {
     //CameraServer.startAutomaticCapture();
 
     
-
     //registers controls
     configureBindings();
     configureAutos();
@@ -103,9 +97,9 @@ public class RobotContainer {
   
   private void configureBindings() {
     
-    //DRIVER CONTROLLER (CONTROLLER ZERO)
+    //-----DRIVER CONTROLLER (CONTROLLER ZERO)-----
 
-    //driving controls
+    //DRIVING CONTROLS
 
     //this makes the drivebase drive. Very important.
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
@@ -115,7 +109,7 @@ public class RobotContainer {
     m_driverController.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
     
 
-    //DPAD creeping
+    //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, creepSpeed, 0.0));
     m_driverController.povLeft().whileTrue(drivebase.driveRobotRelativeCommand(0.0, -creepSpeed, 0.0));
     m_driverController.povUp().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, 0, 0.0));
@@ -129,29 +123,15 @@ public class RobotContainer {
 
 
 
-    //Driver CONTROLLER (CONTROLLER zero)
+    //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
 
+    //Shooter
+    m_operatorController.y().onTrue(shooter.BeginShooting());
+    m_operatorController.y().onFalse(shooter.StopShooting());
     
-    
-    //conveyor (2026)
-    m_driverController.rightBumper().onTrue(conveyor.setHeadSpeed(1));
-    m_driverController.rightBumper().onFalse(conveyor.setHeadSpeed(0));
-
-    //kicker (2026)
-    m_driverController.y().onTrue(kicker.setHeadSpeed(.9));
-    m_driverController.y().onFalse(kicker.setHeadSpeed(0));
-    m_driverController.rightBumper().onTrue(kicker.setHeadSpeed(-1));
-    m_driverController.rightBumper().onFalse(kicker.setHeadSpeed(0));
-
-    //flywheel
-    m_driverController.leftBumper().onTrue(flyleft.setHeadSpeed(.7));
-    m_driverController.leftBumper().onFalse(flyleft.setHeadSpeed(0));
-    m_driverController.leftBumper().onTrue(flyright.setHeadSpeed(-.7));
-    m_driverController.leftBumper().onFalse(flyright.setHeadSpeed(0));
-
     //Harvestor
-    m_driverController.x().onTrue(harvestor.setHeadSpeed(.4));
-    m_driverController.x().onFalse(harvestor.setHeadSpeed(0));
+    m_driverController.a().onTrue(harvestor.setHeadSpeed(.4));
+    m_driverController.a().onFalse(harvestor.setHeadSpeed(0));
 
 
   } 
@@ -177,7 +157,7 @@ public class RobotContainer {
     // An example command will be run in autonomous
     
 /*
-    if(m_autoChooser.getSelected() == "Left"){
+    if("Left".equals(m_autoChooser.getSelected())){
       return 
       AutoBuilder.buildAuto("Test Auto")
       .alongWith(elevator.setLevel(4))
@@ -200,93 +180,11 @@ public class RobotContainer {
     }
 
 
-    if(m_autoChooser.getSelected() == "BlueLeft"){
-      return 
-      AutoBuilder.buildAuto("M1BlueAuto")
-      .alongWith(elevator.setLevel(4))
-      .alongWith(head.setHeadSpeed(0))
-      
-      .andThen(head.setHeadSpeed(.7))
-      .andThen(new WaitCommand(1))
-      .andThen(head.setHeadSpeed(0))
-      
-      .andThen(elevator.setLevel(1))
-      .andThen(AutoBuilder.buildAuto("Human Left"))
-      
-      .andThen(new WaitCommand(1))
-      
-      .andThen(AutoBuilder.buildAuto("Second Score"))
-  
-      //.andThen(head.setHeadSpeed(.2))
-      
-      ;
-    }
-
-
-
-
-    if(m_autoChooser.getSelected() == "Middle"){
-      return
-      AutoBuilder.buildAuto("center1auto")
-      .alongWith(elevator.setLevel(4))
-
-      .andThen(new WaitCommand(1))
-
-      .andThen(head.setHeadSpeed(.7))
-      .andThen(new WaitCommand(0.5))
-      .andThen(head.setHeadSpeed(0))
-
-      .andThen(AutoBuilder.buildAuto("moveback"))
-
-      .andThen(elevator.setLevel(1))
-
-
-      ;
-    }
-
-
-    //middlle Left
-    if(m_autoChooser.getSelected() == "MiddleLeft"){
-      return
-      AutoBuilder.buildAuto("center1auto")
-      .alongWith(elevator.setLevel(4))
-
-      .andThen(head.setHeadSpeed(.7))
-      .andThen(new WaitCommand(0.5))
-      .andThen(head.setHeadSpeed(0))
-
-      .andThen(elevator.setLevel(1))
-
-      .andThen(new WaitCommand(0.25))
-      .andThen(AutoBuilder.buildAuto("center2auto"))
-
-      .andThen(new WaitCommand(2))
-      .andThen(AutoBuilder.buildAuto("center3auto"));
-    }
-
- 
-      //Move Right
-      if(m_autoChooser.getSelected() == "MiddleRight"){
-        return
-        AutoBuilder.buildAuto("center1auto")
-        .alongWith(elevator.setLevel(4))
-  
-        .andThen(head.setHeadSpeed(.7))
-        .andThen(new WaitCommand(0.5))
-        .andThen(head.setHeadSpeed(0))
-  
-        .andThen(elevator.setLevel(1))
-  
-        .andThen(new WaitCommand(0.25))
-        .andThen(AutoBuilder.buildAuto("C2"))
-  
-        .andThen(new WaitCommand(2))
-        .andThen(AutoBuilder.buildAuto("C3"));
-    }
 */
 
    
-    return null;
+    return Commands.none();
     
+
   }
 }

@@ -8,6 +8,10 @@ import java.util.function.BooleanSupplier;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.jni.CANSparkJNI;
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.math.MathUtil;
@@ -34,33 +38,55 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class RebuiltShooterSubsystem extends SubsystemBase{
 
 
-    //Motor settings
-    private SparkMax leftMotor;
-    private SparkMax rightMotor;
+    //CAN IDs
+    private final int leftShooterMotorCanId = 17;
+    private final int rightShooterMotorCanId = 19;
+    private final int conveyorMotorCanId = 5;
+    private final int kickerMotorCanId = 11;
 
-    private int leftMotorCanId = 17;
-    private int rightMotorCanId = 19;
+    //Tuning
+    private double conveyorSpeed = 0.8; //This can be anywhere from -1 to 1. Decimals work, such as 0.8
+    private double kickerSpeed = 0.8;
 
 
     //PID settings
     private PIDController pid;
-    private final double p = 0.1;
+    private final double p = 0.0001;
     private final double i = 0.0;
-    private final double d = 0.01;
-    private final double pidErrorTolerance = 0.2;
+    private final double d = 0.00;
+    private final double pidErrorTolerance = 100;
+    private final double kV = 0.00015;  // initial guess
 
-    //Shooter Tuning
-    private int rpmCurrent = 0;
-    private int rpmTarget = 0;
+
+    //Motor objects
+    private SparkMax leftShooterMotor;
+    private SparkMax rightShooterMotor;
+    private RelativeEncoder shooterEncoder;
+    private VictorSPX conveyorMotor;
+    private SparkMax kickerMotor;
+
+    //Shooter data
+    private double rpmCurrent = 0;
+    private double rpmTarget = 4000; //temporary hardcode
+
+    //Mode
+    private Boolean shooting = false;
+
+
+
 
     //Constructor
     public RebuiltShooterSubsystem(){
-        leftMotor = new SparkMax(leftMotorCanId,MotorType.kBrushless);
-        rightMotor = new SparkMax(rightMotorCanId,MotorType.kBrushless);
+        leftShooterMotor = new SparkMax(leftShooterMotorCanId,MotorType.kBrushless);
+        rightShooterMotor = new SparkMax(rightShooterMotorCanId,MotorType.kBrushless);
+        shooterEncoder = leftShooterMotor.getEncoder();
+        conveyorMotor = new VictorSPX(conveyorMotorCanId);
+        kickerMotor = new SparkMax(kickerMotorCanId, MotorType.kBrushless);
 
         pid = new PIDController(p, i, d);
         pid.setSetpoint(rpmTarget);
         pid.setTolerance(pidErrorTolerance);
+
     }
 
 
@@ -68,42 +94,86 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
     @Override
     public void periodic(){
 
+        //update internal values
+        rpmCurrent = shooterEncoder.getVelocity();
+        
+
+        //update rpmTarget based on distance to the goal
+        //TODO after limelight is working
 
 
-        //update values for shuffleboard
-        SmartDashboard.putNumber("RPM Target", rpmTarget);
 
+
+        //update values for dashboard
+        SmartDashboard.putNumber("Shooter RPM Current", rpmCurrent);
+        SmartDashboard.putNumber("Shooter RPM Target", rpmTarget);
+
+
+        //calculate the shooter motor power needed with pidf
+        if(shooting){
+            double pidOutput = 0;
+            double feedforward = 0;
+            pid.setSetpoint(rpmTarget);
+
+            pidOutput = pid.calculate(rpmCurrent);
+            feedforward = kV * rpmTarget;
+            double totalOutput = pidOutput + feedforward;
+            totalOutput = MathUtil.clamp(totalOutput, -1, 1);
+
+            //apply the power to the shooter motors
+            leftShooterMotor.set(totalOutput);
+            rightShooterMotor.set(-totalOutput);
+        
+            //if we are close enough to our target rpm, we feed balls into the shooter by turning on the conveyor motor and turning on the kicker
+            if (shooting && pid.atSetpoint() ){
+                conveyorMotor.set(VictorSPXControlMode.PercentOutput, conveyorSpeed);
+                kickerMotor.set(kickerSpeed);
+            }
+
+        }else{
+            leftShooterMotor.set(0);
+            rightShooterMotor.set(0);
+            conveyorMotor.set(VictorSPXControlMode.PercentOutput, 0);
+            kickerMotor.set(0);
+        }
+        
+
+        
 
     }
 
-   private int getCurrentRpm(){
-    rightMotor
+   
+    public Command BeginShooting(){
+        pid.reset();
+        return Commands.runOnce(()->beginShooting());
+    }
+
+    private void beginShooting(){
+        shooting = true;
+    }
 
 
-    return 0;
-   }
+
+    
+    public Command StopShooting(){
+        pid.reset();
+        return Commands.runOnce(()->stopShooting());
+    }
+
+    private void stopShooting(){
+        shooting = false;
+    }
+
     
 
 
-    public Command setRpmTarget(int target){    
-        return Commands.runOnce(()-> SetRpmTarget(target));
-    }
-
-    private void SetRpmTarget(int target){
-        rpmTarget = target;
-    }
 
 
 
 
 
 
-
-
-    //remove later
-    public Command setLevel(int level1to4){    
-        return Commands.runOnce(()-> SetRpmTarget(level1to4));
-    }
+    
 
     
 

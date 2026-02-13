@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Filesystem;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import swervelib.parser.SwerveParser;
 import swervelib.SwerveDrive;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -30,10 +31,25 @@ public class SwerveSubsystem extends SubsystemBase {
   double maximumSpeed = Units.feetToMeters(10);
   File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swerve");
   SwerveDrive swerveDrive;
+  LimelightSubsystem limelight;
 
-  public SwerveSubsystem() {
+  public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
+      this.limelight = limelight;
+      
+
+      //stddevs for limelight
+      swerveDrive.setVisionMeasurementStdDevs(
+          VecBuilder.fill(
+              0.7,
+              0.7,
+              Units.degreesToRadians(10)
+          )
+      );
+
+
+
     }catch(Exception e){
       throw new RuntimeException(e);
     }
@@ -150,6 +166,12 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> Arrays.asList(swerveDrive.getModules())
                            .forEach(it -> it.setAngle(0.0)));
   }
+
+
+
+public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
+    swerveDrive.addVisionMeasurement(visionPose, timestampSeconds);
+}
 
 
 
@@ -286,7 +308,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public Command driveRobotRelativeCommand(double x, double y, double rot){
-    return run(() -> drive(new ChassisSpeeds(x,y,0)));
+    return run(() -> drive(new ChassisSpeeds(x,y,rot)));
   }
 
   public void periodic(){
@@ -295,28 +317,16 @@ public class SwerveSubsystem extends SubsystemBase {
     //writeSwerveAnglesToConsole();
 
 
-    /* 
-    System.out.println( 
-    "X: " + Math.round(swerveDrive.getPose().getX() * 1000) /1000 + 
-    "   " +
-    "Y: " + Math.round(swerveDrive.getPose().getY() * 1000) / 1000 +
-    "   " +
-    "Rotation: " + swerveDrive.getPose().getRotation()
-    );
-*/
-    
+    //handle limelight
+    if (limelight.hasTarget()) {
+        Pose2d visionPose = limelight.getBotPose2d();
+        double timestamp = 
+            edu.wpi.first.wpilibj.Timer.getFPGATimestamp()
+            - limelight.getLatencySeconds();
 
-    //for(int i=0; i<4;i++){
-      //SmartDashboard.putNumber("module"+i, swerveDrive.getModules()[i].getRelativePosition());
-      //System.out.println(
-      //"Module "+ i + ": " +
-      //swerveDrive.getModules()[i].getRelativePosition()
-    //);
-    //}
-    
+        swerveDrive.addVisionMeasurement(visionPose, timestamp);
+    }
 
-    
-    //backward is +X  right is +Y
   }
 
 
