@@ -46,7 +46,7 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //Tuning
     private double conveyorSpeed = 0.8; //This can be anywhere from -1 to 1. Decimals work, such as 0.8
-    private double kickerSpeed = 0.8;
+    private double kickerSpeed = -0.8;
 
 
     //PID settings
@@ -67,11 +67,11 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //Shooter data
     private double rpmCurrent = 0;
-    private double rpmTarget = 4000; //temporary hardcode
+    private double rpmTarget = 3800; //temporary hardcode
 
     //Mode
     private Boolean shooting = false;
-
+    private Boolean feeding = false;
 
 
 
@@ -124,19 +124,24 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
             leftShooterMotor.set(totalOutput);
             rightShooterMotor.set(-totalOutput);
         
-            //if we are close enough to our target rpm, we feed balls into the shooter by turning on the conveyor motor and turning on the kicker
             if (shooting && pid.atSetpoint() ){
-                conveyorMotor.set(VictorSPXControlMode.PercentOutput, conveyorSpeed);
-                kickerMotor.set(kickerSpeed);
+                
             }
 
         }else{
             leftShooterMotor.set(0);
-            rightShooterMotor.set(0);
+            rightShooterMotor.set(0); 
+        }
+        
+
+        if(feeding){
+            conveyorMotor.set(VictorSPXControlMode.PercentOutput, conveyorSpeed);
+            kickerMotor.set(kickerSpeed);
+        }else{
             conveyorMotor.set(VictorSPXControlMode.PercentOutput, 0);
             kickerMotor.set(0);
         }
-        
+
 
         
 
@@ -166,6 +171,24 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     
 
+
+    public Command BeginFeedingShooter(){
+        return Commands.runOnce(()->beginFeedingShooter());
+    }
+
+    private void beginFeedingShooter(){
+        feeding = true;
+    }
+
+
+    public Command StopFeedingShooter(){
+        
+        return Commands.runOnce(()->stopFeedingShooter());
+    }
+
+    private void stopFeedingShooter(){
+        feeding = false;
+    }
 
 
 

@@ -11,6 +11,9 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
 
+import frc.robot.subsystems.LimelightSubsystem;
+
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -26,12 +29,20 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+
+//things to make the field work in elastic
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+
 public class SwerveSubsystem extends SubsystemBase {
  
   double maximumSpeed = Units.feetToMeters(10);
   File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swerve");
   SwerveDrive swerveDrive;
   LimelightSubsystem limelight;
+  private final Field2d field = new Field2d();
 
   public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
@@ -48,6 +59,7 @@ public class SwerveSubsystem extends SubsystemBase {
           )
       );
 
+      SmartDashboard.putData("Field", field);
 
 
     }catch(Exception e){
@@ -326,6 +338,10 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
         swerveDrive.addVisionMeasurement(visionPose, timestamp);
     }
+
+    //publish the field to elastic (dashboard)
+    field.setRobotPose(swerveDrive.getPose());
+
 
   }
 

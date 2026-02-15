@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Value;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
@@ -35,24 +36,24 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class HarvestorSubsystem extends SubsystemBase{
 
     //Motor settings
-    private SparkMax motor;
-    private int motorControllerCanID = 4;
-    private boolean invertedMotor = true;
+    private SparkFlex motorLeft;
+    private SparkFlex motorRight;
+    private int motorLeftCanId = 4;
+    private int motorRightCanId = 7;
     
-
+    private double motorSpeed = 0.75;
     
 
     //Constructor
     public HarvestorSubsystem(){
-        motor = new SparkMax(motorControllerCanID,MotorType.kBrushless);
+        motorLeft = new SparkFlex(motorLeftCanId,MotorType.kBrushless);
+        motorRight = new SparkFlex(motorRightCanId,MotorType.kBrushless);
+        
     }
 
     public void setMotorSpeed(double speed){
-        double newSpeed = speed;
-        if(invertedMotor == true){
-            newSpeed = newSpeed *1;
-        }
-        motor.set(newSpeed);
+        motorLeft.set(speed);
+        motorRight.set(speed * -1);
     }
 
 
@@ -61,12 +62,14 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     }
 
-    public Command setHeadSpeedDefault(double speed){
-        return Commands.run(() -> setMotorSpeed(speed),this);
+    
+
+    public Command EnableHarvester(){
+        return Commands.runOnce(() -> setMotorSpeed(motorSpeed),this);
     }
 
-    public Command setHeadSpeed(double speed){
-        return Commands.runOnce(() -> setMotorSpeed(speed),this);
+    public Command DisableHarvester(){
+        return Commands.runOnce(() -> setMotorSpeed(0),this);
     }
 
 

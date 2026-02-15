@@ -37,6 +37,7 @@ import edu.wpi.first.wpilibj2.command.button.POVButton;
 
 
 
+
 public class RobotContainer {
   
 
@@ -58,8 +59,8 @@ public class RobotContainer {
   //Setting up swerve drive
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
       drivebase.getSwerveDrive(),
-    () -> m_driverController.getLeftY() *-1,
-    () -> m_driverController.getLeftX() *-1)
+    () -> m_driverController.getLeftY(),
+    () -> m_driverController.getLeftX())
     .withControllerRotationAxis(m_driverController::getRightX)
     .deadband(OperatorConstants.kDriverStickDeadband)
     .scaleTranslation(1)
@@ -106,8 +107,18 @@ public class RobotContainer {
     //hold b to lock the wheels and resist being pushed
     m_driverController.b().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
     //press start to zero your heading
-    m_driverController.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
+    m_driverController.start().onTrue(Commands.runOnce(drivebase::zeroGyroWithAlliance));
     
+
+    //Harvestor
+    m_driverController.rightBumper().onTrue(harvestor.EnableHarvester());
+    m_driverController.rightBumper().onFalse(harvestor.DisableHarvester());
+
+    //Conveyor & kicker
+    m_driverController.leftTrigger(0.5).onTrue(shooter.BeginFeedingShooter());
+    m_driverController.leftTrigger(0.5).onFalse(shooter.StopFeedingShooter());
+
+
 
     //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, creepSpeed, 0.0));
@@ -121,18 +132,17 @@ public class RobotContainer {
     m_driverController.povUpLeft().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, -creepSpeed, 0.0));
 
 
+    m_driverController.x().onTrue(drivebase.SetPose(new Pose2d(0,0, new Rotation2d(0))));
+
 
 
     //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
 
     //Shooter
-    m_operatorController.y().onTrue(shooter.BeginShooting());
-    m_operatorController.y().onFalse(shooter.StopShooting());
+    m_operatorController.rightBumper().onTrue(shooter.BeginShooting());
+    m_operatorController.rightBumper().onFalse(shooter.StopShooting());
     
-    //Harvestor
-    m_driverController.a().onTrue(harvestor.setHeadSpeed(.4));
-    m_driverController.a().onFalse(harvestor.setHeadSpeed(0));
-
+    
 
   } 
 
