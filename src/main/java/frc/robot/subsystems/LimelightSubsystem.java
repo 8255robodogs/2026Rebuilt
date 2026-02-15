@@ -29,7 +29,7 @@ public class LimelightSubsystem extends SubsystemBase {
     }
 
     public Pose2d getBotPose2d() {
-        double[] poseArray = table.getEntry("botpose_wpiblue").getDoubleArray(new double[6]);
+        double[] poseArray = table.getEntry("botpose_megatag2_wpiblue").getDoubleArray(new double[6]);
 
         return new Pose2d(
             poseArray[0],
