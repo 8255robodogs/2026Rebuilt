@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 
 
@@ -74,9 +75,10 @@ public class RobotContainer {
   Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
   Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
-  
+  //used for camera
   CameraServer cameraServer;
   
+  //used for selecting autos
   private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
 
 
@@ -99,25 +101,60 @@ public class RobotContainer {
   private void configureBindings() {
     
     //-----DRIVER CONTROLLER (CONTROLLER ZERO)-----
+    Trigger t_wheelLock = m_driverController.b();
+    Trigger t_harvester = m_driverController.rightTrigger(0.5);
+    Trigger t_conveyorAndKicker = m_driverController.leftTrigger(0.5);
+    Trigger t_zeroGyro = m_driverController.start();
+    Trigger t_resetPose = m_driverController.x();
 
-    //DRIVING CONTROLS
 
-    //this makes the drivebase drive. Very important.
+    //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
+    Trigger t_shooterAutoSpeed = m_operatorController.rightBumper();
+    Trigger t_autoAim = m_driverController.leftBumper();
+    Trigger t_shooterHighSpeed = m_operatorController.y();
+    Trigger t_shooterManualSpeed = m_operatorController.x();
+    Trigger t_shooterLowSpeed = m_operatorController.a();
+    Trigger t_increaseHarvesterRPM = m_operatorController.povRight();
+    Trigger t_decreaseHarvesterRPM = m_operatorController.povLeft();
+    Trigger t_extendHarvester = m_operatorController.rightBumper();
+    Trigger t_retractHarvester = m_operatorController.leftBumper();
+
+
+
+
+    //this makes the drivebase drive. Very important. This is the default command, a different drivebase command can override it.
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-    //hold b to lock the wheels and resist being pushed
-    m_driverController.b().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-    //press start to zero your heading
-    m_driverController.start().onTrue(Commands.runOnce(drivebase::zeroGyroWithAlliance));
+
+    //lock the wheels and resist being pushed
+    t_wheelLock.whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+
+    //Lock onto the "ideal" target.
+    //logic for that target is in the swervedrive subsystem.
+    //if we are in our scoring area, its our hub. If we are outside our scoring area, its the nearest shuttle point.
+    t_autoAim.whileTrue(
+        drivebase.driveFacingTarget(
+            () -> -m_driverController.getLeftY(),
+            () -> -m_driverController.getLeftX()
+        )
+    );
+
+
+    //zero your heading
+    t_zeroGyro.onTrue(Commands.runOnce(drivebase::zeroGyroWithAlliance));
     
 
     //Harvestor
-    m_driverController.rightBumper().onTrue(harvestor.EnableHarvester());
-    m_driverController.rightBumper().onFalse(harvestor.DisableHarvester());
+    t_harvester.whileTrue(harvestor.StartIntake());
+    t_harvester.whileFalse(harvestor.StopIntake());
+    t_increaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(250));
+    t_decreaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(-250));
+    t_extendHarvester.onTrue(harvestor.Extend());
+    t_retractHarvester.onTrue(harvestor.Retract());
+
 
     //Conveyor & kicker
-    m_driverController.leftTrigger(0.5).onTrue(shooter.BeginFeedingShooter());
-    m_driverController.leftTrigger(0.5).onFalse(shooter.StopFeedingShooter());
-
+    t_conveyorAndKicker.whileTrue(shooter.BeginFeedingShooter().repeatedly());
+    t_conveyorAndKicker.whileFalse(shooter.StopFeedingShooter().repeatedly());
 
 
     //DPAD CREEPING
@@ -131,16 +168,13 @@ public class RobotContainer {
     m_driverController.povUpRight().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, creepSpeed, 0.0));
     m_driverController.povUpLeft().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, -creepSpeed, 0.0));
 
+    //set the robot's pose (its idea of where it is on the field) to 0,0 for debugging
+    t_resetPose.onTrue(drivebase.SetPose(new Pose2d(0,0, new Rotation2d(0))));
 
-    m_driverController.x().onTrue(drivebase.SetPose(new Pose2d(0,0, new Rotation2d(0))));
-
-
-
-    //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
 
     //Shooter
-    m_operatorController.rightBumper().onTrue(shooter.BeginShooting());
-    m_operatorController.rightBumper().onFalse(shooter.StopShooting());
+    t_shooterAutoSpeed.whileTrue(shooter.BeginShooting().repeatedly());
+    t_shooterAutoSpeed.whileFalse(shooter.StopShooting().repeatedly());
     
     
 

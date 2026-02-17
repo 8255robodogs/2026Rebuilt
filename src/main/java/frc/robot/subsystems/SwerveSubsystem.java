@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.io.File;
 import java.util.Arrays;
 import java.util.function.Supplier;
+import java.util.zip.Inflater;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
@@ -28,6 +29,7 @@ import edu.wpi.first.math.util.Units;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.math.controller.PIDController;
 
 
 //things to make the field work in elastic
@@ -40,9 +42,27 @@ public class SwerveSubsystem extends SubsystemBase {
  
   double maximumSpeed = Units.feetToMeters(10);
   File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swerve");
+
+  //rebuilt specific positioning
+  private final Translation2d blueHub = new Translation2d(4.611624,4.021328);
+  private final Translation2d blueLeftShuttleTarget = new Translation2d(2.305812, 6);
+  private final Translation2d blueRightShuttleTarget = new Translation2d(2.305812, 2);
+  private final Pose2d blueOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(0)); //TODO set the actual value
+
+  private final Translation2d redLeftShuttleTarget = new Translation2d(4.33, 2);
+  private final Translation2d redHub = new Translation2d(11.901424, 4.021328);
+  private final Translation2d redRightShuttleTarget = new Translation2d(4.33, 6);
+  private final Pose2d redOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(180)); //TODO set the actual value
+
+
   SwerveDrive swerveDrive;
   LimelightSubsystem limelight;
   private final Field2d field = new Field2d();
+  private final PIDController headingPID = new PIDController(4.0, 0.0, 0.2); //used for auto-lock on rotation
+
+
+
+
 
   public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
@@ -59,7 +79,14 @@ public class SwerveSubsystem extends SubsystemBase {
           )
       );
 
+      //used to draw the field in the dashboard
       SmartDashboard.putData("Field", field);
+
+      //used for auto-lock on rotation
+      headingPID.enableContinuousInput(-Math.PI, Math.PI);
+      headingPID.setTolerance(Units.degreesToRadians(2));
+
+
 
 
     }catch(Exception e){
@@ -286,6 +313,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
     );
   }
 
+
   public void setPose(Pose2d pose2d){
     swerveDrive.resetOdometry(pose2d);
   }
@@ -345,7 +373,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
   }
 
-
+  //for debugging and tuning swerve drive. this should be displayed in the dashboard instead. will fix later
   private void writeSwerveAnglesToConsole(){
 System.out.println(
     "Swerve angles: "+  
@@ -356,5 +384,104 @@ System.out.println(
 
     );
   }
+
+
+  public Command driveFacingTarget(Supplier<Double> xInput, Supplier<Double> yInput) {
+  return run(() -> {
+
+    // Field-relative translation from driver
+    double xSpeed = xInput.get() * swerveDrive.getMaximumChassisVelocity();
+    double ySpeed = yInput.get() * swerveDrive.getMaximumChassisVelocity();
+
+    // Get target translation
+    Translation2d target = getHubOrIdealShuttleTarget();
+
+    // Current pose
+    Pose2d pose = getPose();
+
+    // Vector from robot to target
+    Translation2d delta = target.minus(pose.getTranslation());
+
+    // Desired heading (radians)
+    double desiredHeading = Math.atan2(delta.getY(), delta.getX());
+
+    // Current heading
+    double currentHeading = pose.getRotation().getRadians();
+
+    // PID output (angular velocity)
+    double omega = headingPID.calculate(currentHeading, desiredHeading);
+
+    // Clamp if needed
+    omega = Math.max(Math.min(omega, swerveDrive.getMaximumChassisAngularVelocity()), 
+                     -swerveDrive.getMaximumChassisAngularVelocity());
+
+    // Drive field-relative
+    swerveDrive.driveFieldOriented(
+        new ChassisSpeeds(xSpeed, ySpeed, omega)
+    );
+
+  });
+}
+
+
+
+
+
+  //2026 Rebuilt specific
+  public Command driveToMyAllianceOutpost(){
+    if(isRedAlliance()){
+      return run(() -> driveToPose(redOutpostRobotPose));
+    }else{
+      return run(() -> driveToPose(blueOutpostRobotPose));
+    }
+  }
+
+  private double distanceToMyHub(){
+    if(isRedAlliance()){
+      return getPose().getTranslation().getDistance(redHub);
+    }else{
+      return getPose().getTranslation().getDistance(blueHub);
+    }
+  }
+
+
+  //check if we are on the side of our hub where we can score
+  private boolean inFriendlyScoringArea(){
+    if(isRedAlliance()){
+      return getPose().getTranslation().getX() > redHub.getX();
+    }else{
+      return getPose().getTranslation().getX() < blueHub.getX();
+    }
+  }
+
+
+  private Translation2d getHubOrIdealShuttleTarget(){
+    if(isRedAlliance()){
+      if(inFriendlyScoringArea()){
+        return redHub;
+      }else{
+        if(getPose().getY() >= redHub.getY()){
+          return redRightShuttleTarget;
+        }else{
+          return redLeftShuttleTarget;
+        }
+      }
+    }else{
+      if(inFriendlyScoringArea()){
+        return blueHub;
+      }else{
+        if(getPose().getY() >= blueHub.getY()){
+          return blueLeftShuttleTarget;
+        }else{
+          return blueRightShuttleTarget;
+        }
+      }
+    }
+
+
+
+  }
+
+
 
 }
