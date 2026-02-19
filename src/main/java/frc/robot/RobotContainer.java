@@ -22,6 +22,7 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.cscore.VideoMode;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -49,7 +50,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final LimelightSubsystem limelight = new LimelightSubsystem();
   private final SwerveSubsystem drivebase = new SwerveSubsystem(limelight);
-  private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem();
+  private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem(drivebase);
   private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
 
   
@@ -58,19 +59,22 @@ public class RobotContainer {
   private final CommandXboxController m_operatorController = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
   
   //Setting up swerve drive
-  SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
+  SwerveInputStream driveAngularVelocity = 
+    SwerveInputStream.of(
       drivebase.getSwerveDrive(),
-    () -> m_driverController.getLeftY(),
-    () -> m_driverController.getLeftX())
-    .withControllerRotationAxis(m_driverController::getRightX)
+      () -> -m_driverController.getLeftY(),
+      () -> -m_driverController.getLeftX()
+    )
+    .withControllerRotationAxis(() -> MathUtil.applyDeadband(-m_driverController.getRightX(), 0.15))
     .deadband(OperatorConstants.kDriverStickDeadband)
     .scaleTranslation(1)
     .allianceRelativeControl(true);
 
   SwerveInputStream driveDirectAngle = driveAngularVelocity.copy()
-    .withControllerHeadingAxis(m_driverController::getRightX, 
-    m_driverController::getRightY)
-    .headingWhile(true);
+    .withControllerHeadingAxis(
+    () -> MathUtil.applyDeadband(m_driverController.getRightX(), OperatorConstants.kDriverStickDeadband),
+    () -> MathUtil.applyDeadband(m_driverController.getRightY(), OperatorConstants.kDriverStickDeadband)
+    ).headingWhile(true);
 
   Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
   Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
@@ -80,7 +84,6 @@ public class RobotContainer {
   
   //used for selecting autos
   private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
-
 
 
 
@@ -106,21 +109,29 @@ public class RobotContainer {
     Trigger t_conveyorAndKicker = m_driverController.leftTrigger(0.5);
     Trigger t_zeroGyro = m_driverController.start();
     Trigger t_resetPose = m_driverController.x();
-
+    Trigger t_autoAim = m_driverController.rightStick();
 
     //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
-    Trigger t_shooterAutoSpeed = m_operatorController.rightBumper();
-    Trigger t_autoAim = m_driverController.leftBumper();
+    Trigger t_shooterAutoSpeed = m_operatorController.x();
     Trigger t_shooterHighSpeed = m_operatorController.y();
-    Trigger t_shooterManualSpeed = m_operatorController.x();
     Trigger t_shooterLowSpeed = m_operatorController.a();
+    Trigger t_shooterManualSpeed = m_operatorController.b();
+    Trigger t_increaseShooterManualSpeed = m_operatorController.povUp();
+    Trigger t_decreaseShooterManualSpeed = m_operatorController.povDown();
+
     Trigger t_increaseHarvesterRPM = m_operatorController.povRight();
     Trigger t_decreaseHarvesterRPM = m_operatorController.povLeft();
     Trigger t_extendHarvester = m_operatorController.rightBumper();
     Trigger t_retractHarvester = m_operatorController.leftBumper();
 
 
-
+    //debug - testing auto drive to locations
+    /*
+    final Pose2d blueRight = new Pose2d(2,2,new Rotation2d(0));
+    final Pose2d blueLeft = new Pose2d(2,4,new Rotation2d(0));
+    m_driverController.rightStick().onTrue(drivebase.driveToPose(blueRight));
+    m_driverController.leftStick().onTrue(drivebase.driveToPose(blueLeft));
+    */
 
     //this makes the drivebase drive. Very important. This is the default command, a different drivebase command can override it.
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
@@ -153,9 +164,10 @@ public class RobotContainer {
 
 
     //Conveyor & kicker
-    t_conveyorAndKicker.whileTrue(shooter.BeginFeedingShooter().repeatedly());
-    t_conveyorAndKicker.whileFalse(shooter.StopFeedingShooter().repeatedly());
-
+    t_conveyorAndKicker.whileTrue(shooter.BeginFeedingShooter());
+    t_conveyorAndKicker.whileFalse(shooter.StopFeedingShooter());
+    t_conveyorAndKicker.whileTrue(harvestor.AssistConveyor());
+    t_conveyorAndKicker.whileFalse(harvestor.StopIntake());
 
     //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, creepSpeed, 0.0));
@@ -169,13 +181,24 @@ public class RobotContainer {
     m_driverController.povUpLeft().whileTrue(drivebase.driveRobotRelativeCommand(-creepSpeed, -creepSpeed, 0.0));
 
     //set the robot's pose (its idea of where it is on the field) to 0,0 for debugging
-    t_resetPose.onTrue(drivebase.SetPose(new Pose2d(0,0, new Rotation2d(0))));
+    t_resetPose.onTrue(drivebase.SetPose(new Pose2d(2,2, new Rotation2d(0))));
 
 
     //Shooter
-    t_shooterAutoSpeed.whileTrue(shooter.BeginShooting().repeatedly());
-    t_shooterAutoSpeed.whileFalse(shooter.StopShooting().repeatedly());
-    
+    t_shooterAutoSpeed.whileTrue(shooter.BeginShootingAutoRpm().repeatedly());
+    t_shooterHighSpeed.whileTrue(shooter.BeginShootingHighRpm());
+    t_shooterLowSpeed.whileTrue(shooter.BeginShootingLowRpm());
+    t_shooterManualSpeed.whileTrue(shooter.BeginShootingManualRpm().repeatedly());
+    t_increaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(250));
+    t_decreaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(-250));
+
+    //create a trigger for when any shooting button is pressed, then make sure when that trigger isn't happening, we stop shooting
+    Trigger anyShooterButton =
+    t_shooterAutoSpeed
+        .or(t_shooterHighSpeed)
+        .or(t_shooterLowSpeed)
+        .or(t_shooterManualSpeed);
+    anyShooterButton.whileFalse(shooter.StopShooting());
     
 
   } 

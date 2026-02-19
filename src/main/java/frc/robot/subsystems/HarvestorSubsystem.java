@@ -44,6 +44,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     private final SparkFlex motorRight;
     private final int motorLeftCanId = 4;
     private final int motorRightCanId = 7;
+    private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
     private static final double BASE_RPM = 2000;
@@ -102,6 +103,7 @@ public class HarvestorSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("Intake set RPM", targetRPM);
         SmartDashboard.putNumber("Intake real RPM", getRPM());
         SmartDashboard.putBoolean("Intake Extended", piston.get() == DoubleSolenoid.Value.kForward);
+        SmartDashboard.putBoolean("Harvester", harvestorRunning);
     }
 
     
@@ -115,20 +117,18 @@ public class HarvestorSubsystem extends SubsystemBase{
             double output = velocityPID.calculate(getRPM(), targetRPM);
             output = MathUtil.clamp(output, -1.0, 1.0);
             setMotorSpeeds(output);
+            System.out.println("COMMAND: START HARVESTER SHOOTER");
+            harvestorRunning = true;
         }
     );
     }
 
-    public Command StartIntakeBackwards(){
-        return run(() -> {
-            setMotorSpeeds(-0.3);
-        }
-        );
-    }
 
     public Command StopIntake(){
         return Commands.runOnce(() -> {
             stopMotor();
+            System.out.println("COMMAND: STOP HARVESTER");
+            harvestorRunning = false;
         });
     }
 
@@ -141,7 +141,18 @@ public class HarvestorSubsystem extends SubsystemBase{
 
 
 
+public Command AssistConveyor() {
+    return run(
+        () -> {
+            double output = velocityPID.calculate(getRPM(), -targetRPM);
+            output = MathUtil.clamp(output, -1.0, 1.0);
+            setMotorSpeeds(output);
+            System.out.println("COMMAND: HARVESTER ASSIST CONVEYOR");
+            harvestorRunning = true;
 
+        }
+    );
+    }
     
 
 

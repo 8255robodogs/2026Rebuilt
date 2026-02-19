@@ -12,14 +12,17 @@ import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.jni.CANSparkJNI;
+import com.revrobotics.sim.SparkMaxSim;
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.networktables.BooleanEntry;
 import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -27,6 +30,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.shuffleboard.WidgetType;
+import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
@@ -34,6 +38,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import edu.wpi.first.math.util.Units;
+import com.revrobotics.sim.SparkMaxSim;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.system.LinearSystem;
+
 
 public class RebuiltShooterSubsystem extends SubsystemBase{
 
@@ -44,10 +55,10 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
     private final int conveyorMotorCanId = 5;
     private final int kickerMotorCanId = 11;
 
-    //Tuning
+    //conveyor tuning
     private double conveyorSpeed = 0.8; //This can be anywhere from -1 to 1. Decimals work, such as 0.8
     private double kickerSpeed = -0.8;
-
+    
 
     //PID settings
     private PIDController pid;
@@ -67,16 +78,30 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //Shooter data
     private double rpmCurrent = 0;
-    private double rpmTarget = 3800; //temporary hardcode
+    private double rpmTarget = 0; //temporary hardcode
+    private double autoRpmTarget;
+    private double lowRpmTarget = 3000;
+    private double highRpmTarget = 4500;
+    private double manualRpmTarget = 2000;
 
     //Mode
-    private Boolean shooting = false;
+    private Boolean revShooter = false;
     private Boolean feeding = false;
 
+    //simulation
+    private FlywheelSim shooterSim;
+    private SparkMaxSim leftShooterSim;
+    private SparkMaxSim rightShooterSim;
+    private final double gearRatio = 1.0;          
+    private final double momentOfInertia = 0.002; 
+
+
+    //reference to the drivebase so we can check our position
+    SwerveSubsystem drivebase;
 
 
     //Constructor
-    public RebuiltShooterSubsystem(){
+    public RebuiltShooterSubsystem(SwerveSubsystem drivebase){
         leftShooterMotor = new SparkMax(leftShooterMotorCanId,MotorType.kBrushless);
         rightShooterMotor = new SparkMax(rightShooterMotorCanId,MotorType.kBrushless);
         shooterEncoder = leftShooterMotor.getEncoder();
@@ -86,6 +111,34 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         pid = new PIDController(p, i, d);
         pid.setSetpoint(rpmTarget);
         pid.setTolerance(pidErrorTolerance);
+
+
+
+        this.drivebase = drivebase;
+
+
+
+
+        //simulation
+        LinearSystem<N1, N1, N1> flywheelPlant =
+            LinearSystemId.createFlywheelSystem(
+            DCMotor.getNEO(2),   // 2 motors
+            momentOfInertia,
+            gearRatio
+        );
+
+        leftShooterSim = new SparkMaxSim(leftShooterMotor, DCMotor.getNEO(1));
+        rightShooterSim = new SparkMaxSim(rightShooterMotor, DCMotor.getNEO(1));
+
+        shooterSim = new FlywheelSim(
+            flywheelPlant,
+            DCMotor.getNEO(2)
+        );
+
+
+
+        
+
 
     }
 
@@ -99,18 +152,36 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         
 
         //update rpmTarget based on distance to the goal
-        //TODO after limelight is working
-
+        if(drivebase.distanceToMyTarget() > 0){
+            autoRpmTarget = 1000;
+        }
+        if(drivebase.distanceToMyTarget() > 1){
+            autoRpmTarget = 1500;
+        }
+        if(drivebase.distanceToMyTarget() > 2){
+            autoRpmTarget = 1800;
+        }
+        //TODO add additional values. eventually, change this to a formula.
+        //TODO CLAMP VALUES
 
 
 
         //update values for dashboard
         SmartDashboard.putNumber("Shooter RPM Current", rpmCurrent);
         SmartDashboard.putNumber("Shooter RPM Target", rpmTarget);
+        SmartDashboard.putBoolean("Conveyor", feeding);
+        SmartDashboard.putNumber("Kicker RPM Current", kickerMotor.getEncoder().getVelocity());
+        SmartDashboard.putNumber("Low RPM for shooter", lowRpmTarget);
+        SmartDashboard.putNumber("High RPM for shooter", highRpmTarget);
+        SmartDashboard.putNumber("Auto RPM for shooter", autoRpmTarget);
+        SmartDashboard.putNumber("Distance To Target", drivebase.distanceToMyTarget());
+        SmartDashboard.putBoolean("Rev Shooter", revShooter);
+        SmartDashboard.putBoolean("RPM READY", pid.atSetpoint());
+        SmartDashboard.putNumber("Manual RPM for Shooter", manualRpmTarget);
 
 
         //calculate the shooter motor power needed with pidf
-        if(shooting){
+        if(revShooter){
             double pidOutput = 0;
             double feedforward = 0;
             pid.setSetpoint(rpmTarget);
@@ -123,10 +194,6 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
             //apply the power to the shooter motors
             leftShooterMotor.set(totalOutput);
             rightShooterMotor.set(-totalOutput);
-        
-            if (shooting && pid.atSetpoint() ){
-                
-            }
 
         }else{
             leftShooterMotor.set(0);
@@ -147,48 +214,135 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     }
 
+
+
+
+    //simulation only
+    @Override
+    public void simulationPeriodic() {
+
+        // Use left motor as leader reference
+        double appliedVoltage = leftShooterMotor.getAppliedOutput() * 12.0;
+
+        // Feed voltage into physics model
+        shooterSim.setInputVoltage(appliedVoltage);
+
+        // Advance simulation by 20ms
+        shooterSim.update(0.02);
+
+        // Convert rad/s to RPM
+        double simRPM = Units.radiansPerSecondToRotationsPerMinute(
+            shooterSim.getAngularVelocityRadPerSec()
+        );
+
+        // Push velocity into SparkMax simulated encoders
+        leftShooterSim.setVelocity(simRPM);
+        rightShooterSim.setVelocity(simRPM);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //shooting commands
    
-    public Command BeginShooting(){
+    public Command BeginShootingAutoRpm(){
         pid.reset();
-        return Commands.runOnce(()->beginShooting());
+        return Commands.runOnce(()->{
+            revShooter = true;
+            rpmTarget = autoRpmTarget;
+            System.out.println("COMMAND: SHOOT AT AUTO RPM");
+        });
     }
 
-    private void beginShooting(){
-        shooting = true;
+    public Command BeginShootingLowRpm(){
+        pid.reset();
+        return Commands.runOnce(()->{
+            revShooter = true;
+            rpmTarget = lowRpmTarget;
+            System.out.println("COMMAND: SHOOT AT LOW RPM");
+        });
     }
 
+    public Command BeginShootingHighRpm(){
+        pid.reset();
+        return Commands.runOnce(()->{
+            revShooter = true;
+            rpmTarget = highRpmTarget;
+            System.out.println("COMMAND: SHOOT AT HIGH RPM");
 
+        });
+    }
 
+    public Command BeginShootingManualRpm(){
+        pid.reset();
+        return Commands.runOnce(()->{
+            revShooter = true;
+            rpmTarget = highRpmTarget;
+            System.out.println("COMMAND: SHOOT AT MANUAL RPM");
+
+        });
+    }
     
     public Command StopShooting(){
         pid.reset();
-        return Commands.runOnce(()->stopShooting());
+        return Commands.runOnce(()->{
+            revShooter = false;
+            System.out.println("COMMAND: STOP SHOOTER");
+
+        });
     }
 
-    private void stopShooting(){
-        shooting = false;
+    public Command ModifyManualShootingRPM(double modifier){
+        pid.reset();
+        return Commands.runOnce(()->{
+            manualRpmTarget += modifier;
+            manualRpmTarget = MathUtil.clamp(manualRpmTarget, -1000, 6000);
+        });
     }
 
+
+
+
+
+
+
+
+
+
+    //conveyor commands
     
-
-
     public Command BeginFeedingShooter(){
-        return Commands.runOnce(()->beginFeedingShooter());
-    }
+        return Commands.runOnce(()->{
+            feeding = true;
+            System.out.println("COMMAND: START FEEDING SHOOTER");
 
-    private void beginFeedingShooter(){
-        feeding = true;
+        });
     }
-
 
     public Command StopFeedingShooter(){
         
-        return Commands.runOnce(()->stopFeedingShooter());
+        return Commands.runOnce(()->{
+            feeding = false;
+            System.out.println("COMMAND: STOP FEEDING SHOOTER");
+        });
     }
 
-    private void stopFeedingShooter(){
-        feeding = false;
-    }
+    
 
 
 

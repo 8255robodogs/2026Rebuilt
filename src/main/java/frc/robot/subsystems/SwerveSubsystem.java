@@ -34,6 +34,7 @@ import edu.wpi.first.math.controller.PIDController;
 
 //things to make the field work in elastic
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.FieldObject2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -60,8 +61,9 @@ public class SwerveSubsystem extends SubsystemBase {
   private final Field2d field = new Field2d();
   private final PIDController headingPID = new PIDController(4.0, 0.0, 0.2); //used for auto-lock on rotation
 
-
-
+  //aim line to show current target
+  Translation2d target = new Translation2d(0.5,0.5);
+  private final FieldObject2d aimLine = field.getObject("AimLine");
 
 
   public SwerveSubsystem(LimelightSubsystem limelight) {
@@ -167,15 +169,6 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
 
-/**
-   * Resets the gyro angle to zero and resets odometry to the same position, but facing toward 0.
-   */
-  public void zeroGyro()
-  {
-    swerveDrive.zeroGyro();
-      
-  }
-
   /**
    * This will zero (calibrate) the robot to assume the current position is facing forward
    * <p>
@@ -183,16 +176,11 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public void zeroGyroWithAlliance()
   {
-    if (isRedAlliance())
-    {
-      zeroGyro();
-      //Set the pose 180 degrees
-      resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
-    } else
-    {
-      zeroGyro();
-
-    }
+      swerveDrive.zeroGyro();
+      if (isRedAlliance()){
+        //Set the pose 180 degrees
+        resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
+      } 
   }
 
 /**
@@ -353,45 +341,74 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
   public void periodic(){
 
-    //write out our encoder angles to the console
-    //writeSwerveAnglesToConsole();
+    //write out our encoder angles to the network tables
+    double[] swerveAngles = new double[4];
+    for (int i=0; i< swerveAngles.length;i++){
+      swerveAngles[i]=Math.round(swerveDrive.getModules()[i].getAbsolutePosition());
+    }
+    SmartDashboard.putNumberArray("Swerve Angles", swerveAngles);
 
+    
 
     //handle limelight
-    if (limelight.hasTarget()) {
-        Pose2d visionPose = limelight.getBotPose2d();
-        double timestamp = 
-            edu.wpi.first.wpilibj.Timer.getFPGATimestamp()
-            - limelight.getLatencySeconds();
+    if(!edu.wpi.first.wpilibj.RobotBase.isSimulation()){ //ensure we are not inside a simulation
+      if (limelight.hasTarget()) {
+          Pose2d visionPose = limelight.getBotPose2d();
+          double timestamp = 
+              edu.wpi.first.wpilibj.Timer.getFPGATimestamp()
+              - limelight.getLatencySeconds();
+          swerveDrive.addVisionMeasurement(visionPose, timestamp);
+      }
 
-        swerveDrive.addVisionMeasurement(visionPose, timestamp);
+      
+      
     }
 
     //publish the field to elastic (dashboard)
     field.setRobotPose(swerveDrive.getPose());
+    aimLine.setPoses(getPose(), new Pose2d(getHubOrIdealShuttleTarget(), new Rotation2d(0)));
+    
+    //publish our location
+    SmartDashboard.putNumber("Pose X", getPose().getX());
+    SmartDashboard.putNumber("Pose Y", getPose().getY());
+    SmartDashboard.putNumber("Pose Deg", getPose().getRotation().getDegrees());
+
+    //publish our speed
+    ChassisSpeeds s = getRobotVelocity();
+    SmartDashboard.putNumber("vx", Math.round(s.vxMetersPerSecond * 100.0) / 100.0);
+    SmartDashboard.putNumber("vy",Math.round(s.vyMetersPerSecond * 100.0) / 100.0);
+    SmartDashboard.putNumber("omega",Math.round(s.omegaRadiansPerSecond * 100.0) / 100.0);
+    SmartDashboard.putNumber("omega (deg per sec)",Math.toDegrees(s.omegaRadiansPerSecond));
+
 
 
   }
 
-  //for debugging and tuning swerve drive. this should be displayed in the dashboard instead. will fix later
-  private void writeSwerveAnglesToConsole(){
-System.out.println(
-    "Swerve angles: "+  
-    Math.round(swerveDrive.getModules()[0].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[1].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[2].getAbsolutePosition()) + ", " +
-  Math.round(swerveDrive.getModules()[3].getAbsolutePosition()) + ", " 
 
-    );
-  }
+    //simulation code for running a virtual robot
+    @Override
+    public void simulationPeriodic(){
+      swerveDrive.updateOdometry();
+    }
+
+
+
+
+ 
 
 
   public Command driveFacingTarget(Supplier<Double> xInput, Supplier<Double> yInput) {
   return run(() -> {
 
     // Field-relative translation from driver
-    double xSpeed = xInput.get() * swerveDrive.getMaximumChassisVelocity();
-    double ySpeed = yInput.get() * swerveDrive.getMaximumChassisVelocity();
+    double xSpeed = xInput.get();
+    double ySpeed = yInput.get();
+    if (isRedAlliance()) {
+        xSpeed = -xSpeed;
+        ySpeed = -ySpeed;
+    }
+    xSpeed *= swerveDrive.getMaximumChassisVelocity();
+    ySpeed *= swerveDrive.getMaximumChassisVelocity();
 
     // Get target translation
     Translation2d target = getHubOrIdealShuttleTarget();
@@ -427,6 +444,22 @@ System.out.println(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   //2026 Rebuilt specific
   public Command driveToMyAllianceOutpost(){
     if(isRedAlliance()){
@@ -436,12 +469,8 @@ System.out.println(
     }
   }
 
-  private double distanceToMyHub(){
-    if(isRedAlliance()){
-      return getPose().getTranslation().getDistance(redHub);
-    }else{
-      return getPose().getTranslation().getDistance(blueHub);
-    }
+  public double distanceToMyTarget(){
+      return getPose().getTranslation().getDistance(getHubOrIdealShuttleTarget());
   }
 
 
