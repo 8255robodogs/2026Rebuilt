@@ -82,13 +82,15 @@ public class HarvestorSubsystem extends SubsystemBase{
     private void setMotorSpeeds(double speed){
         motorLeft.set(speed);
         motorRight.set(speed*-1);
+        harvestorRunning = true;
     }
 
 
-    //stop both motors
+    //stop both motors. call this when other commands end so we have a consistent way of stopping things.
     private void stopMotor() {
-    setMotorSpeeds(0);
-    velocityPID.reset();
+        setMotorSpeeds(0);
+        velocityPID.reset();
+        harvestorRunning = false;
     }
 
 
@@ -111,26 +113,17 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //Wheel commands
 
-    public Command StartIntake() {
+    public Command Intake() {
     return run(
         () -> {
             double output = velocityPID.calculate(getRPM(), targetRPM);
             output = MathUtil.clamp(output, -1.0, 1.0);
             setMotorSpeeds(output);
-            System.out.println("COMMAND: START HARVESTER SHOOTER");
             harvestorRunning = true;
         }
-    );
+    ).finallyDo(()-> stopMotor());
     }
 
-
-    public Command StopIntake(){
-        return Commands.runOnce(() -> {
-            stopMotor();
-            System.out.println("COMMAND: STOP HARVESTER");
-            harvestorRunning = false;
-        });
-    }
 
 
     public Command ModifyIntakeTargetRPMs(double rpmModification){
@@ -147,11 +140,9 @@ public Command AssistConveyor() {
             double output = velocityPID.calculate(getRPM(), -targetRPM);
             output = MathUtil.clamp(output, -1.0, 1.0);
             setMotorSpeeds(output);
-            System.out.println("COMMAND: HARVESTER ASSIST CONVEYOR");
             harvestorRunning = true;
-
         }
-    );
+    ).finallyDo(()->stopMotor());
     }
     
 

@@ -1,11 +1,9 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-
-
+import frc.robot.commands.RebuiltAutoShoot;
 //import subsystems
 import frc.robot.subsystems.RebuiltShooterSubsystem;
-import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.HarvestorSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -25,6 +23,7 @@ import edu.wpi.first.cscore.VideoMode;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.util.PixelFormat;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -155,8 +154,7 @@ public class RobotContainer {
     
 
     //Harvestor
-    t_harvester.whileTrue(harvestor.StartIntake());
-    t_harvester.whileFalse(harvestor.StopIntake());
+    t_harvester.whileTrue(harvestor.Intake());
     t_increaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(250));
     t_decreaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(-250));
     t_extendHarvester.onTrue(harvestor.Extend());
@@ -164,10 +162,8 @@ public class RobotContainer {
 
 
     //Conveyor & kicker
-    t_conveyorAndKicker.whileTrue(shooter.BeginFeedingShooter());
-    t_conveyorAndKicker.whileFalse(shooter.StopFeedingShooter());
+    t_conveyorAndKicker.whileTrue(shooter.FeedShooter());
     t_conveyorAndKicker.whileTrue(harvestor.AssistConveyor());
-    t_conveyorAndKicker.whileFalse(harvestor.StopIntake());
 
     //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, creepSpeed, 0.0));
@@ -185,10 +181,10 @@ public class RobotContainer {
 
 
     //Shooter
-    t_shooterAutoSpeed.whileTrue(shooter.BeginShootingAutoRpm().repeatedly());
-    t_shooterHighSpeed.whileTrue(shooter.BeginShootingHighRpm());
-    t_shooterLowSpeed.whileTrue(shooter.BeginShootingLowRpm());
-    t_shooterManualSpeed.whileTrue(shooter.BeginShootingManualRpm().repeatedly());
+    t_shooterAutoSpeed.whileTrue(shooter.ShootAtAutoRpm());
+    t_shooterHighSpeed.whileTrue(shooter.ShootAtHighRpm());
+    t_shooterLowSpeed.whileTrue(shooter.ShootAtLowRpm());
+    t_shooterManualSpeed.whileTrue(shooter.ShootAtManualRpm());
     t_increaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(250));
     t_decreaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(-250));
 
@@ -210,6 +206,7 @@ public class RobotContainer {
     m_autoChooser.addOption("MiddleLeft", "MiddleLeft");
     m_autoChooser.addOption("MiddleRight", "MiddleRight");
     m_autoChooser.addOption("BlueLeft","BlueLeft");
+    m_autoChooser.addOption("RebuiltBlueRight", "RebuiltBlueRight");
     SmartDashboard.putData("Auto Choices", m_autoChooser);
   }
 
@@ -220,10 +217,36 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
 
-  public Command getAutonomousCommand() {
-    // An example command will be run in autonomous
-    
-/*
+  public Command getAutonomousCommand() {    
+
+    if("RebuiltBlueRight".equals(m_autoChooser.getSelected())){
+      
+      Pose2d blueRightStartingPose = new Pose2d(
+        new Translation2d(2,2),
+        new Rotation2d(0)
+      );
+
+      Pose2d blueOutpostPose = new Pose2d(
+        new Translation2d(0.33,.7),
+        new Rotation2d(0)
+      );
+
+      return Commands.sequence(
+        drivebase.SetPose(blueRightStartingPose),
+        (drivebase.driveToPose(blueOutpostPose)),
+        (harvestor.Extend()),
+        (harvestor.Intake().withTimeout(2)),
+        (drivebase.driveToPose(blueRightStartingPose)),
+        new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5)
+      );
+
+    }
+
+
+
+
+
+    /*
     if("Left".equals(m_autoChooser.getSelected())){
       return 
       AutoBuilder.buildAuto("Test Auto")

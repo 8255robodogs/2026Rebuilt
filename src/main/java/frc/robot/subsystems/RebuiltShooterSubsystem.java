@@ -79,13 +79,13 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
     //Shooter data
     private double rpmCurrent = 0;
     private double rpmTarget = 0; //temporary hardcode
-    private double autoRpmTarget;
+    private double autoRpmTarget = 2000;
     private double lowRpmTarget = 3000;
     private double highRpmTarget = 4500;
     private double manualRpmTarget = 2000;
 
     //Mode
-    private Boolean revShooter = false;
+    private Boolean shooterPowered = false;
     private Boolean feeding = false;
 
     //simulation
@@ -175,42 +175,9 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("High RPM for shooter", highRpmTarget);
         SmartDashboard.putNumber("Auto RPM for shooter", autoRpmTarget);
         SmartDashboard.putNumber("Distance To Target", drivebase.distanceToMyTarget());
-        SmartDashboard.putBoolean("Rev Shooter", revShooter);
+        SmartDashboard.putBoolean("Shooter Power", shooterPowered);
         SmartDashboard.putBoolean("RPM READY", pid.atSetpoint());
         SmartDashboard.putNumber("Manual RPM for Shooter", manualRpmTarget);
-
-
-        //calculate the shooter motor power needed with pidf
-        if(revShooter){
-            double pidOutput = 0;
-            double feedforward = 0;
-            pid.setSetpoint(rpmTarget);
-
-            pidOutput = pid.calculate(rpmCurrent);
-            feedforward = kV * rpmTarget;
-            double totalOutput = pidOutput + feedforward;
-            totalOutput = MathUtil.clamp(totalOutput, -1, 1);
-
-            //apply the power to the shooter motors
-            leftShooterMotor.set(totalOutput);
-            rightShooterMotor.set(-totalOutput);
-
-        }else{
-            leftShooterMotor.set(0);
-            rightShooterMotor.set(0); 
-        }
-        
-
-        if(feeding){
-            conveyorMotor.set(VictorSPXControlMode.PercentOutput, conveyorSpeed);
-            kickerMotor.set(kickerSpeed);
-        }else{
-            conveyorMotor.set(VictorSPXControlMode.PercentOutput, 0);
-            kickerMotor.set(0);
-        }
-
-
-        
 
     }
 
@@ -245,7 +212,30 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
 
 
+     //calculate the shooter motor power needed with pidf
+        private void getShooterToRpm(double rpm){
+            rpmTarget = rpm;
+            shooterPowered = true;
+            double pidOutput = 0;
+            double feedforward = 0;
+            pid.setSetpoint(rpmTarget);
 
+            pidOutput = pid.calculate(rpmCurrent);
+            feedforward = kV * rpmTarget;
+            double totalOutput = pidOutput + feedforward;
+            totalOutput = MathUtil.clamp(totalOutput, -1, 1);
+
+            //apply the power to the shooter motors
+            leftShooterMotor.set(totalOutput);
+            rightShooterMotor.set(-totalOutput);
+
+        }
+        
+        private void stopShooter(){
+            shooterPowered = false;
+            leftShooterMotor.set(0);
+            rightShooterMotor.set(0); 
+        }
 
 
 
@@ -260,50 +250,50 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //shooting commands
    
-    public Command BeginShootingAutoRpm(){
+    public Command ShootAtAutoRpm(){
         pid.reset();
-        return Commands.runOnce(()->{
-            revShooter = true;
-            rpmTarget = autoRpmTarget;
-            System.out.println("COMMAND: SHOOT AT AUTO RPM");
+        return Commands.run(()->{
+            getShooterToRpm(autoRpmTarget);
+        })
+        .finallyDo(()->{
+            stopShooter();
         });
     }
 
-    public Command BeginShootingLowRpm(){
+    public Command ShootAtLowRpm(){
         pid.reset();
-        return Commands.runOnce(()->{
-            revShooter = true;
-            rpmTarget = lowRpmTarget;
-            System.out.println("COMMAND: SHOOT AT LOW RPM");
+        return Commands.run(()->{
+            getShooterToRpm(lowRpmTarget);
+        })
+        .finallyDo(()->{
+            stopShooter();
         });
     }
 
-    public Command BeginShootingHighRpm(){
+    public Command ShootAtHighRpm(){
         pid.reset();
-        return Commands.runOnce(()->{
-            revShooter = true;
-            rpmTarget = highRpmTarget;
-            System.out.println("COMMAND: SHOOT AT HIGH RPM");
-
+        return Commands.run(()->{
+            getShooterToRpm(highRpmTarget);
+        })
+        .finallyDo(()->{
+            stopShooter();
         });
     }
 
-    public Command BeginShootingManualRpm(){
+    public Command ShootAtManualRpm(){
         pid.reset();
-        return Commands.runOnce(()->{
-            revShooter = true;
-            rpmTarget = highRpmTarget;
-            System.out.println("COMMAND: SHOOT AT MANUAL RPM");
-
+        return Commands.run(()->{
+            getShooterToRpm(manualRpmTarget);
+        })
+        .finallyDo(()->{
+            stopShooter();
         });
     }
     
     public Command StopShooting(){
         pid.reset();
         return Commands.runOnce(()->{
-            revShooter = false;
-            System.out.println("COMMAND: STOP SHOOTER");
-
+            stopShooter();
         });
     }
 
@@ -316,41 +306,33 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
     }
 
 
-
-
-
-
+    public Command GetShooterUpToAutoRpmSpeed(){
+        pid.reset();
+        return Commands.run(()-> {
+            getShooterToRpm(autoRpmTarget);
+        }
+        ).until(pid::atSetpoint);
+    }
 
 
 
 
     //conveyor commands
     
-    public Command BeginFeedingShooter(){
-        return Commands.runOnce(()->{
+    public Command FeedShooter(){
+        return Commands.run(()->{
             feeding = true;
-            System.out.println("COMMAND: START FEEDING SHOOTER");
-
-        });
+            conveyorMotor.set(VictorSPXControlMode.PercentOutput, conveyorSpeed);
+            kickerMotor.set(kickerSpeed);
+        }
+        ).finallyDo(()->{
+            feeding=false;
+            conveyorMotor.set(VictorSPXControlMode.PercentOutput, 0);
+            kickerMotor.set(0);
+        });    
     }
 
-    public Command StopFeedingShooter(){
-        
-        return Commands.runOnce(()->{
-            feeding = false;
-            System.out.println("COMMAND: STOP FEEDING SHOOTER");
-        });
-    }
 
-    
-
-
-
-
-
-
-
-    
 
     
 

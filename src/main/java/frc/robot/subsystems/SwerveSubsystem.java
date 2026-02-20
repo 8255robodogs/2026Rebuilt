@@ -398,7 +398,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
 
   public Command driveFacingTarget(Supplier<Double> xInput, Supplier<Double> yInput) {
-  return run(() -> {
+  return this.run(() -> {
 
     // Field-relative translation from driver
     double xSpeed = xInput.get();
@@ -427,6 +427,8 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     // PID output (angular velocity)
     double omega = headingPID.calculate(currentHeading, desiredHeading);
+    System.out.println("AUTO AIM RUNNING");
+
 
     // Clamp if needed
     omega = Math.max(Math.min(omega, swerveDrive.getMaximumChassisAngularVelocity()), 
