@@ -57,8 +57,8 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //piston
     public DoubleSolenoid piston;
-    private int pistonForwardPort = 2;
-    private int pistonReversePort = 3;
+    private int pistonForwardPort = 0;
+    private int pistonReversePort = 1;
 
     //Constructor
     public HarvestorSubsystem(){
@@ -73,6 +73,11 @@ public class HarvestorSubsystem extends SubsystemBase{
             PneumaticsModuleType.CTREPCM,
             pistonForwardPort,
             pistonReversePort );
+
+
+        
+
+        
     }
 
 

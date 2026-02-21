@@ -50,9 +50,9 @@ public class SwerveSubsystem extends SubsystemBase {
   private final Translation2d blueRightShuttleTarget = new Translation2d(2.305812, 2);
   private final Pose2d blueOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(0)); //TODO set the actual value
 
-  private final Translation2d redLeftShuttleTarget = new Translation2d(4.33, 2);
+  private final Translation2d redLeftShuttleTarget = new Translation2d(14.2, 2);
   private final Translation2d redHub = new Translation2d(11.901424, 4.021328);
-  private final Translation2d redRightShuttleTarget = new Translation2d(4.33, 6);
+  private final Translation2d redRightShuttleTarget = new Translation2d(14.2, 6);
   private final Pose2d redOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(180)); //TODO set the actual value
 
 
