@@ -57,7 +57,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
   SwerveDrive swerveDrive;
+  
+
   LimelightSubsystem limelight;
+
+
+
   private final Field2d field = new Field2d();
   private final PIDController headingPID = new PIDController(4.0, 0.0, 0.2); //used for auto-lock on rotation
 
@@ -69,6 +74,16 @@ public class SwerveSubsystem extends SubsystemBase {
   public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
+      
+      // Rotate robot frame 180°
+      swerveDrive.zeroGyro();
+      resetOdometry(
+          new Pose2d(
+              new Translation2d(),
+              Rotation2d.fromDegrees(180)
+          )
+      );
+      
       this.limelight = limelight;
       
 
@@ -178,7 +193,6 @@ public class SwerveSubsystem extends SubsystemBase {
   {
       swerveDrive.zeroGyro();
       if (isRedAlliance()){
-        //Set the pose 180 degrees
         resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
       } 
   }
@@ -226,8 +240,8 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
           // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
           (speedsRobotRelative, moduleFeedForwards) -> {
             var invertedSpeeds = new ChassisSpeeds(
-              speedsRobotRelative.vxMetersPerSecond,
-              speedsRobotRelative.vyMetersPerSecond,
+              -speedsRobotRelative.vxMetersPerSecond,
+              -speedsRobotRelative.vyMetersPerSecond,
               -speedsRobotRelative.omegaRadiansPerSecond);
             if (enableFeedforward)
             {
