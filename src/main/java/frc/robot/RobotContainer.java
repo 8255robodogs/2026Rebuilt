@@ -5,6 +5,7 @@ import frc.robot.commands.RebuiltAutoShoot;
 //import subsystems
 import frc.robot.subsystems.RebuiltShooterSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.RebuiltClimberSubsystem;
 import frc.robot.subsystems.HarvestorSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
@@ -51,7 +52,7 @@ public class RobotContainer {
   private final SwerveSubsystem drivebase = new SwerveSubsystem(limelight);
   private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem(drivebase);
   private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
-
+  private final RebuiltClimberSubsystem climber = new RebuiltClimberSubsystem();
   
   //declare the controllers
   private final CommandXboxController m_driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
@@ -111,6 +112,8 @@ public class RobotContainer {
     Trigger t_zeroGyro = m_driverController.start();
     Trigger t_resetPose = m_driverController.x();
     Trigger t_autoAim = m_driverController.rightStick();
+    Trigger t_driver_extend_harvester = m_driverController.rightBumper();
+    Trigger t_driver_retract_harvester = m_driverController.leftBumper();
 
     //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
     Trigger t_shooterAutoSpeed = m_operatorController.x();
@@ -125,6 +128,8 @@ public class RobotContainer {
     Trigger t_extendHarvester = m_operatorController.rightBumper();
     Trigger t_retractHarvester = m_operatorController.leftBumper();
 
+    Trigger t_climber_up = m_operatorController.rightTrigger(0.5);
+    Trigger t_climber_down = m_operatorController.leftTrigger(0.5);
 
     //debug - testing auto drive to locations
     /*
@@ -161,6 +166,8 @@ public class RobotContainer {
     t_decreaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(-250));
     t_extendHarvester.onTrue(harvestor.Extend());
     t_retractHarvester.onTrue(harvestor.Retract());
+    t_driver_extend_harvester.onTrue(harvestor.Extend());
+    t_driver_retract_harvester.onTrue(harvestor.Retract());
 
 
     //Conveyor & kicker
@@ -187,8 +194,13 @@ public class RobotContainer {
     t_shooterHighSpeed.whileTrue(shooter.ShootAtHighRpm());
     t_shooterLowSpeed.whileTrue(shooter.ShootAtLowRpm());
     t_shooterManualSpeed.whileTrue(shooter.ShootAtManualRpm());
-    t_increaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(250));
-    t_decreaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(-250));
+    t_increaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(100));
+    t_decreaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(-100));
+
+    //Climber
+    t_climber_up.onTrue(climber.Extend());
+    t_climber_down.onTrue(climber.Retract());
+
 
     //create a trigger for when any shooting button is pressed, then make sure when that trigger isn't happening, we stop shooting
     Trigger anyShooterButton =

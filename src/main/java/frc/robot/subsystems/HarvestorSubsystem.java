@@ -43,14 +43,16 @@ public class HarvestorSubsystem extends SubsystemBase{
     private final SparkFlex motorLeft;
     //private final SparkFlex motorRight;
     private final int motorLeftCanId = 4;
-    //private final int motorRightCanId = 7;
+    //private final int motorRightCanId = 3;
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
-    private static final double BASE_RPM = 2000;
+    private double harvesterFixedSpeed = 0.5;
+
+    private static final double BASE_RPM = 3000;
     private double targetRPM = BASE_RPM;
     private double rpmErrorTolerance = 400;
-    private final PIDController velocityPID = new PIDController(0.0004, 0.0, 0.0);
+    private final PIDController velocityPID = new PIDController(0.00008, 0.0, 0.0);
     
     //pressure control module (PCM)
     private int pcmCanId = Constants.pcmCanId;
@@ -102,7 +104,6 @@ public class HarvestorSubsystem extends SubsystemBase{
     @Override
     public void periodic(){
         //write information to the dashboard
-        SmartDashboard.putNumber("Intake set RPM", targetRPM);
         SmartDashboard.putNumber("Intake real RPM", getRPM());
         SmartDashboard.putBoolean("Intake Extended", piston.get() == DoubleSolenoid.Value.kForward);
         SmartDashboard.putBoolean("Harvester", harvestorRunning);
@@ -116,10 +117,19 @@ public class HarvestorSubsystem extends SubsystemBase{
     public Command Intake() {
     return run(
         () -> {
+            //calcualte values with pid
             double output = velocityPID.calculate(getRPM(), targetRPM);
-            output = MathUtil.clamp(output, 0, .8);
+            
+            //apply feed forward
+            double kF = 1.0 / 6000.0;  // tune this
+            double feedforward = targetRPM * kF;
+            output += feedforward;
+
+            //clamp values
+            output = MathUtil.clamp(output, 0, 1);
             setMotorSpeeds(output);
 
+            //setMotorSpeeds(harvesterFixedSpeed);
         }
     ).finallyDo(()-> stopMotor());
     }

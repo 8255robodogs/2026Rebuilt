@@ -62,10 +62,10 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //PID settings
     private PIDController pid;
-    private final double p = 0.0001;
+    private final double p = 0.0005;
     private final double i = 0.0;
     private final double d = 0.00;
-    private final double pidErrorTolerance = 100;
+    private final double pidErrorTolerance = 50;
     private final double kV = 0.00015;  // initial guess
 
 
@@ -153,17 +153,31 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
         //update rpmTarget based on distance to the goal
         if(drivebase.distanceToMyTarget() > 0){
-            autoRpmTarget = 1000;
+            autoRpmTarget = 2400;
         }
-        if(drivebase.distanceToMyTarget() > 1){
-            autoRpmTarget = 1500;
+        if(drivebase.distanceToMyTarget() > 1.8){
+            autoRpmTarget = 2400;
         }
-        if(drivebase.distanceToMyTarget() > 2){
-            autoRpmTarget = 1800;
+        if(drivebase.distanceToMyTarget() > 2.15){
+            autoRpmTarget = 2800;
         }
-        //TODO add additional values. eventually, change this to a formula.
-        //TODO CLAMP VALUES
+        if(drivebase.distanceToMyTarget() > 2.7){
+            autoRpmTarget = 3100;
+        }
+        if(drivebase.distanceToMyTarget() > 3){
+            autoRpmTarget = 3300;
+        }
+        if(drivebase.distanceToMyTarget() > 3.5){
+            autoRpmTarget = 5500;
+        }
 
+
+        //TODO add additional values. eventually, change this to a formula.
+        //autoRpmTarget = (drivebase.distanceToMyTarget() * 1360.5 ) + 478;
+
+
+        //CLAMP VALUES
+        autoRpmTarget = MathUtil.clamp(autoRpmTarget, 0, 5800);
 
 
         //update values for dashboard
