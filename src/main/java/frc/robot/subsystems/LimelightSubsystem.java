@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.math.geometry.Transform3d;
@@ -29,14 +30,22 @@ public class LimelightSubsystem extends SubsystemBase {
     }
 
     public Pose2d getBotPose2d() {
-        double[] poseArray = table.getEntry("botpose_megatag2_wpiblue").getDoubleArray(new double[6]);
+    double[] poseArray =
+        table.getEntry("botpose_wpiblue")
+             .getDoubleArray(new double[6]);
 
-        return new Pose2d(
-            poseArray[0],
-            poseArray[1],
-            new edu.wpi.first.math.geometry.Rotation2d(Math.toRadians(poseArray[5]))
-        );
+    // Reject invalid data
+    if (poseArray.length < 6 || (poseArray[0] == 0 && poseArray[1] == 0)) {
+        return null;
     }
+
+    return new Pose2d(
+        poseArray[0],
+        poseArray[1],
+        Rotation2d.fromDegrees(poseArray[5])
+    );
+}
+
 
     public double getLatencySeconds() {
         double latencyMs = table.getEntry("tl").getDouble(0)

@@ -17,6 +17,7 @@ import frc.robot.subsystems.LimelightSubsystem;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.Timer;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import swervelib.parser.SwerveParser;
 import swervelib.SwerveDrive;
@@ -75,14 +76,7 @@ public class SwerveSubsystem extends SubsystemBase {
     try{
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
       
-      // Rotate robot frame 180°
-      swerveDrive.zeroGyro();
-      resetOdometry(
-          new Pose2d(
-              new Translation2d(),
-              Rotation2d.fromDegrees(180)
-          )
-      );
+      
       
       this.limelight = limelight;
       
@@ -101,7 +95,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
       //used for auto-lock on rotation
       headingPID.enableContinuousInput(-Math.PI, Math.PI);
-      headingPID.setTolerance(Units.degreesToRadians(2));
+      headingPID.setTolerance(Units.degreesToRadians(6));
 
 
 
@@ -367,16 +361,18 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
     //handle limelight
     if(!edu.wpi.first.wpilibj.RobotBase.isSimulation()){ //ensure we are not inside a simulation
       if (limelight.hasTarget()) {
-          Pose2d visionPose = limelight.getBotPose2d();
-          double timestamp = 
-              edu.wpi.first.wpilibj.Timer.getFPGATimestamp()
-              - limelight.getLatencySeconds();
+        Pose2d visionPose = limelight.getBotPose2d();
+        if (visionPose != null) {
+          double timestamp = Timer.getFPGATimestamp() - limelight.getLatencySeconds();
           swerveDrive.addVisionMeasurement(visionPose, timestamp);
+        }
       }
+    }
+
 
       
       
-    }
+    
 
     //publish the field to elastic (dashboard)
     field.setRobotPose(swerveDrive.getPose());
@@ -441,7 +437,6 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     // PID output (angular velocity)
     double omega = headingPID.calculate(currentHeading, desiredHeading);
-    System.out.println("AUTO AIM RUNNING");
 
 
     // Clamp if needed

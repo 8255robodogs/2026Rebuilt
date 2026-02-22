@@ -41,15 +41,15 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //motor settings
     private final SparkFlex motorLeft;
-    private final SparkFlex motorRight;
+    //private final SparkFlex motorRight;
     private final int motorLeftCanId = 4;
-    private final int motorRightCanId = 7;
+    //private final int motorRightCanId = 7;
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
     private static final double BASE_RPM = 2000;
     private double targetRPM = BASE_RPM;
-    private double rpmErrorTolerance = 50;
+    private double rpmErrorTolerance = 400;
     private final PIDController velocityPID = new PIDController(0.0004, 0.0, 0.0);
     
     //pressure control module (PCM)
@@ -64,7 +64,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     public HarvestorSubsystem(){
         //motors
         motorLeft = new SparkFlex(motorLeftCanId, MotorType.kBrushless);
-        motorRight = new SparkFlex(motorRightCanId, MotorType.kBrushless);
+        //motorRight = new SparkFlex(motorRightCanId, MotorType.kBrushless);
         velocityPID.setTolerance(rpmErrorTolerance);
 
         //piston
@@ -73,11 +73,6 @@ public class HarvestorSubsystem extends SubsystemBase{
             PneumaticsModuleType.CTREPCM,
             pistonForwardPort,
             pistonReversePort );
-
-
-        
-
-        
     }
 
 
@@ -86,7 +81,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     //use this to set the motor speeds at once. notice the right motor is inverted
     private void setMotorSpeeds(double speed){
         motorLeft.set(speed);
-        motorRight.set(speed*-1);
+        //motorRight.set(speed*-1);
         harvestorRunning = true;
     }
 
@@ -122,9 +117,9 @@ public class HarvestorSubsystem extends SubsystemBase{
     return run(
         () -> {
             double output = velocityPID.calculate(getRPM(), targetRPM);
-            output = MathUtil.clamp(output, -1.0, 1.0);
+            output = MathUtil.clamp(output, 0, .8);
             setMotorSpeeds(output);
-            harvestorRunning = true;
+
         }
     ).finallyDo(()-> stopMotor());
     }
@@ -145,7 +140,6 @@ public Command AssistConveyor() {
             double output = velocityPID.calculate(getRPM(), -targetRPM);
             output = MathUtil.clamp(output, -1.0, 1.0);
             setMotorSpeeds(output);
-            harvestorRunning = true;
         }
     ).finallyDo(()->stopMotor());
     }

@@ -165,7 +165,7 @@ public class RobotContainer {
 
     //Conveyor & kicker
     t_conveyorAndKicker.whileTrue(shooter.FeedShooter());
-    t_conveyorAndKicker.whileTrue(harvestor.AssistConveyor());
+    //t_conveyorAndKicker.whileTrue(harvestor.Intake());
 
     //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, -creepSpeed, 0.0));

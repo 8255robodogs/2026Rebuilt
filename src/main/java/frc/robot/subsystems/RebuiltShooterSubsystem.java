@@ -226,7 +226,7 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
             totalOutput = MathUtil.clamp(totalOutput, -1, 1);
 
             //apply the power to the shooter motors
-            leftShooterMotor.set(-totalOutput);
+            leftShooterMotor.set(totalOutput);
             rightShooterMotor.set(-totalOutput);
 
         }
