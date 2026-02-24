@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -16,7 +17,8 @@ public class LimelightSubsystem extends SubsystemBase {
 
     private final NetworkTable table;
 
-   
+    private final double minimumTagsForVisionToBeTrusted = 1;
+    private final double maximumAverageTagDistanceToTrust = 4;
 
 
 
@@ -25,8 +27,37 @@ public class LimelightSubsystem extends SubsystemBase {
         table = NetworkTableInstance.getDefault().getTable("limelight");
     }
 
-    public boolean hasTarget() {
-        return table.getEntry("tv").getDouble(0) == 1;
+    public boolean hasReliableTarget() {
+        boolean result = true;
+
+        //make sure we actually see a tag
+        double tagValid = table.getEntry("tv").getDouble(0);
+        if(tagValid != 1){
+            result = false;
+        } 
+
+        //make sure we are calculating with a certain number of tags
+        double tagCount = table.getEntry("tagcount").getDouble(0);
+        if (tagCount < minimumTagsForVisionToBeTrusted){
+            result = false;
+        }
+
+        //don't trust tag readings if the average distance is too far away
+        double avgDist = table.getEntry("avgdist").getDouble(0);
+        if (avgDist > maximumAverageTagDistanceToTrust) {
+            result = false;
+        }
+
+        
+
+        //post check results to dashboard
+        SmartDashboard.putNumber("LL TagCount", tagCount);
+        SmartDashboard.putNumber("LL AvgDist", avgDist);
+        SmartDashboard.putBoolean("LL HasTarget", tagValid == 1);
+
+
+
+        return result;
     }
 
     public Pose2d getBotPose2d() {

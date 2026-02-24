@@ -27,7 +27,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.controller.PIDController;
@@ -49,12 +50,12 @@ public class SwerveSubsystem extends SubsystemBase {
   private final Translation2d blueHub = new Translation2d(4.611624,4.021328);
   private final Translation2d blueLeftShuttleTarget = new Translation2d(2.305812, 6);
   private final Translation2d blueRightShuttleTarget = new Translation2d(2.305812, 2);
-  private final Pose2d blueOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(0)); //TODO set the actual value
+  private final Pose2d blueOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(0)); 
 
   private final Translation2d redLeftShuttleTarget = new Translation2d(14.2, 2);
   private final Translation2d redHub = new Translation2d(11.901424, 4.021328);
   private final Translation2d redRightShuttleTarget = new Translation2d(14.2, 6);
-  private final Pose2d redOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(180)); //TODO set the actual value
+  private final Pose2d redOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(180)); 
 
 
   SwerveDrive swerveDrive;
@@ -65,12 +66,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
   private final Field2d field = new Field2d();
-  private final PIDController headingPID = new PIDController(4.0, 0.0, 0.2); //used for auto-lock on rotation
+  private final PIDController headingPID = new PIDController(3.0, 0.1, 0.3); //used for auto-lock on rotation
 
   //aim line to show current target
   Translation2d target = new Translation2d(0.5,0.5);
   private final FieldObject2d aimLine = field.getObject("AimLine");
-
+  private final NetworkTable llTable;
 
   public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
@@ -79,14 +80,15 @@ public class SwerveSubsystem extends SubsystemBase {
       
       
       this.limelight = limelight;
-      
+      llTable = NetworkTableInstance.getDefault().getTable("limelight");
+
 
       //stddevs for limelight
       swerveDrive.setVisionMeasurementStdDevs(
           VecBuilder.fill(
-              0.7,
-              0.7,
-              Units.degreesToRadians(10)
+              0.2,
+              0.2,
+              Units.degreesToRadians(5)
           )
       );
 
@@ -95,7 +97,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
       //used for auto-lock on rotation
       headingPID.enableContinuousInput(-Math.PI, Math.PI);
-      headingPID.setTolerance(Units.degreesToRadians(6));
+      headingPID.setTolerance(Units.degreesToRadians(3));
 
 
 
@@ -360,9 +362,35 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     //handle limelight
     if(!edu.wpi.first.wpilibj.RobotBase.isSimulation()){ //ensure we are not inside a simulation
-      if (limelight.hasTarget()) {
+      
+      //basic method, standard deviations (level of vision trust) are fixed.
+      if (limelight.hasReliableTarget()) {
         Pose2d visionPose = limelight.getBotPose2d();
         if (visionPose != null) {
+          double timestamp = Timer.getFPGATimestamp() - limelight.getLatencySeconds();
+          swerveDrive.addVisionMeasurement(visionPose, timestamp);
+        }
+      }
+
+      //dynamic standard deviations. Trust more the closer we are
+      if (limelight.hasReliableTarget()) {
+        Pose2d visionPose = limelight.getBotPose2d();
+        if (visionPose != null) {
+          double avgDist = llTable.getEntry("avgdist").getDouble(0);
+          double tagCount = llTable.getEntry("tagcount").getDouble(0);
+
+          double xyStdDev = 0.05 + (avgDist * 0.05);
+          double rotStdDev = Units.degreesToRadians(2 + avgDist * 1.5);
+
+          if (tagCount >= 2) {
+              xyStdDev *= 0.6;
+              rotStdDev *= 0.6;
+          }
+
+          swerveDrive.setVisionMeasurementStdDevs(
+              VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev)
+          );
+
           double timestamp = Timer.getFPGATimestamp() - limelight.getLatencySeconds();
           swerveDrive.addVisionMeasurement(visionPose, timestamp);
         }
@@ -376,7 +404,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     //publish the field to elastic (dashboard)
     field.setRobotPose(swerveDrive.getPose());
-    aimLine.setPoses(getPose(), new Pose2d(getHubOrIdealShuttleTarget(), new Rotation2d(0)));
+    aimLine.setPoses(getPose(), new Pose2d(modifyATargetForMovement(getHubOrIdealShuttleTarget()), new Rotation2d(0)));
     
     //publish our location
     SmartDashboard.putNumber("Pose X", getPose().getX());
@@ -422,6 +450,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     // Get target translation
     Translation2d target = getHubOrIdealShuttleTarget();
+    target = modifyATargetForMovement(target);
 
     // Current pose
     Pose2d pose = getPose();
@@ -517,11 +546,28 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
         }
       }
     }
-
-
-
   }
 
+  private Translation2d modifyATargetForMovement(Translation2d baseTarget){
+    double projectileHangtime = 0.95;
+
+    //get robot-relative speed
+    ChassisSpeeds robotRelative = getRobotVelocity();
+
+    //convert to field-relative speed
+    ChassisSpeeds fieldRelative = ChassisSpeeds.fromFieldRelativeSpeeds(robotRelative, getPose().getRotation());
+
+    double xDrift = -fieldRelative.vxMetersPerSecond * projectileHangtime;
+    double yDrift = -fieldRelative.vyMetersPerSecond * projectileHangtime;
+
+    Translation2d modifiedTarget = new Translation2d
+    (
+      baseTarget.getX() + xDrift,
+      baseTarget.getY() + yDrift
+    );
+
+    return modifiedTarget;
+  }
 
 
 }

@@ -172,7 +172,7 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         }
 
 
-        //TODO add additional values. eventually, change this to a formula.
+        //TODO change to formula if we can
         //autoRpmTarget = (drivebase.distanceToMyTarget() * 1360.5 ) + 478;
 
 
