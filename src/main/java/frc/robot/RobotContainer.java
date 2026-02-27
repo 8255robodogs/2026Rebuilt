@@ -215,13 +215,21 @@ public class RobotContainer {
 
   private void configureAutos(){
     
+    //m_autoChooser is the component on our dashboard that lets us choose an auto routine we want to run
+    
+    //First, we add names for our routines that we can select
     m_autoChooser.setDefaultOption("Left", "Left");
     m_autoChooser.addOption("Middle", "Middle");
     m_autoChooser.addOption("MiddleLeft", "MiddleLeft");
     m_autoChooser.addOption("MiddleRight", "MiddleRight");
     m_autoChooser.addOption("BlueLeft","BlueLeft");
     m_autoChooser.addOption("RebuiltBlueRight", "RebuiltBlueRight");
+
+    //Second, we add that data to the dashboard all at once
     SmartDashboard.putData("Auto Choices", m_autoChooser);
+
+    //This ties in with the getAutonomousCommand() function below
+
   }
 
 
@@ -233,8 +241,15 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {    
 
+    //This is where the logic and commands inside our autonomous routines goes.
+    //We simply check if the autonomous chooser matches one of these names, then do those actions.
+
+
     if("RebuiltBlueRight".equals(m_autoChooser.getSelected())){
       
+      //This block of code isn't a command, this is defining a "pose", which is an x,y location on the field and a rotation. We will use this pose later.
+      // 0,0 is the bottom left of the field, or you could say the blue corner which is to the blue alliance's right while they are looking at the field.
+      //increasing x goes towards the red alliance, increasing y goes to the blue alliance's left.
       Pose2d blueRightStartingPose = new Pose2d(
         new Translation2d(2,2),
         new Rotation2d(0)
@@ -245,13 +260,15 @@ public class RobotContainer {
         new Rotation2d(0)
       );
 
+      //Here, we create a set of commands that happen in sequence.
       return Commands.sequence(
         drivebase.SetPose(blueRightStartingPose),
-        (drivebase.driveToPose(blueOutpostPose)),
-        (harvestor.Extend()),
-        (harvestor.Intake().withTimeout(2)),
-        (drivebase.driveToPose(blueRightStartingPose)),
-        new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5)
+        drivebase.driveToPose(blueOutpostPose),
+        harvestor.Extend(),
+        harvestor.Intake().withTimeout(2),
+        drivebase.driveToPose(blueRightStartingPose),
+        new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5),
+        drivebase.driveToPose(blueOutpostPose).withTimeout(0.3)
       );
 
     }
