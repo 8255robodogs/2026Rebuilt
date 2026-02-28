@@ -41,15 +41,15 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //motor settings
     private final SparkFlex motorLeft;
-    //private final SparkFlex motorRight;
+    private final SparkFlex motorRight;
     private final int motorLeftCanId = 4;
-    //private final int motorRightCanId = 3;
+    private final int motorRightCanId = 3;
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
     private double harvesterFixedSpeed = 0.5;
 
-    private static final double BASE_RPM = 3000;
+    private static final double BASE_RPM = 2000;
     private double targetRPM = BASE_RPM;
     private double rpmErrorTolerance = 400;
     private final PIDController velocityPID = new PIDController(0.00008, 0.0, 0.0);
@@ -66,7 +66,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     public HarvestorSubsystem(){
         //motors
         motorLeft = new SparkFlex(motorLeftCanId, MotorType.kBrushless);
-        //motorRight = new SparkFlex(motorRightCanId, MotorType.kBrushless);
+        motorRight = new SparkFlex(motorRightCanId, MotorType.kBrushless);
         velocityPID.setTolerance(rpmErrorTolerance);
 
         //piston
@@ -83,7 +83,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     //use this to set the motor speeds at once. notice the right motor is inverted
     private void setMotorSpeeds(double speed){
         motorLeft.set(speed);
-        //motorRight.set(speed*-1);
+        motorRight.set(speed);
         harvestorRunning = true;
     }
 
@@ -118,18 +118,18 @@ public class HarvestorSubsystem extends SubsystemBase{
     return run(
         () -> {
             //calcualte values with pid
-            double output = velocityPID.calculate(getRPM(), targetRPM);
+            // double output = velocityPID.calculate(getRPM(), targetRPM);
             
-            //apply feed forward
-            double kF = 1.0 / 6000.0;  // tune this
-            double feedforward = targetRPM * kF;
-            output += feedforward;
+            // //apply feed forward
+            // double kF = 1.0 / 6000.0;  // tune this
+            // double feedforward = targetRPM * kF;
+            // output += feedforward;
 
-            //clamp values
-            output = MathUtil.clamp(output, 0, 1);
-            setMotorSpeeds(output);
+            // //clamp values
+            // output = MathUtil.clamp(output, 0, 1);
+            // setMotorSpeeds(output);
 
-            //setMotorSpeeds(harvesterFixedSpeed);
+            setMotorSpeeds(harvesterFixedSpeed);
         }
     ).finallyDo(()-> stopMotor());
     }
