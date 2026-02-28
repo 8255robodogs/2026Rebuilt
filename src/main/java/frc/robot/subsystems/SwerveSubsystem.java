@@ -223,20 +223,20 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
           this::getRobotVelocity,
           // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
           (speedsRobotRelative, moduleFeedForwards) -> {
-            var invertedSpeeds = new ChassisSpeeds(
-              -speedsRobotRelative.vxMetersPerSecond,
-              -speedsRobotRelative.vyMetersPerSecond,
-              -speedsRobotRelative.omegaRadiansPerSecond);
+            var speeds = new ChassisSpeeds(
+              speedsRobotRelative.vxMetersPerSecond,
+              speedsRobotRelative.vyMetersPerSecond,
+              speedsRobotRelative.omegaRadiansPerSecond);
             if (enableFeedforward)
             {
               swerveDrive.drive(
-                  invertedSpeeds,
-                  swerveDrive.kinematics.toSwerveModuleStates(invertedSpeeds),
+                  speeds,
+                  swerveDrive.kinematics.toSwerveModuleStates(speeds),
                   moduleFeedForwards.linearForces()
                                );
             } else
             {
-              swerveDrive.setChassisSpeeds(invertedSpeeds);
+              swerveDrive.setChassisSpeeds(speeds);
             }
           },
           // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
@@ -283,11 +283,11 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
    * @param pose Target {@link Pose2d} to go to.
    * @return PathFinding command
    */
-  public Command driveToPose(Pose2d pose)
+  public Command driveToPose(Pose2d pose, double speedInMetersPerSecond)
   {
     // Create the constraints to use while pathfinding
     PathConstraints constraints = new PathConstraints(
-      swerveDrive.getMaximumChassisVelocity(), 2.0,
+      speedInMetersPerSecond, 0.2,
       swerveDrive.getMaximumChassisAngularVelocity(), Units.degreesToRadians(90)
     );
 
@@ -486,9 +486,9 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
   //2026 Rebuilt specific
   public Command driveToMyAllianceOutpost(){
     if(isRedAlliance()){
-      return run(() -> driveToPose(redOutpostRobotPose));
+      return run(() -> driveToPose(redOutpostRobotPose, 0.2));
     }else{
-      return run(() -> driveToPose(blueOutpostRobotPose));
+      return run(() -> driveToPose(blueOutpostRobotPose, 0.2));
     }
   }
 

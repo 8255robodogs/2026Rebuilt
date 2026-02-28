@@ -7,19 +7,25 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Center to Outpost"
+            "pathName": "FromRightStartToOutpost"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "OutpostToCenter"
+            "pathName": "FromOutPostToScoringSpot"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": null
+            "name": "Shoot"
           }
         }
       ]

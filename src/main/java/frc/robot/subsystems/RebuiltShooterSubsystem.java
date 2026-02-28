@@ -62,11 +62,11 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //PID settings
     private PIDController pid;
-    private final double p = 0.0006;
+    private final double p = 0.0003;
     private final double i = 0.0;
-    private final double d = 0.00;
+    private final double d = 0.0;
     private final double pidErrorTolerance = 100;
-    private final double kV = 0.00015;  // initial guess
+    private final double kV = 0.00017;  // initial guess
 
 
     //Motor objects
@@ -319,6 +319,10 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
 
     public Command GetShooterUpToAutoRpmSpeed(){
+        
+        double time = 0;
+        double timeToHold = 1.5;
+        
         pid.reset();
         return Commands.run(()-> {
             getShooterToRpm(autoRpmTarget);

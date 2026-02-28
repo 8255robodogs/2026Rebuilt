@@ -241,7 +241,7 @@ public class RobotContainer {
     //First, we add names for our routines that we can select
     m_autoChooser.setDefaultOption("Left", "Left");
     m_autoChooser.addOption("Middle", "Middle");
-    m_autoChooser.addOption("MiddleLeft", "MiddleLeft");
+    m_autoChooser.addOption("OutPostCollectAndShoot", "OutPostCollectAndShoot");
     m_autoChooser.addOption("Shooter Test", "Shooter Test");
     m_autoChooser.addOption("Harvestor Test","Harvestor Test");
     m_autoChooser.addOption("RebuiltBlueRight", "RebuiltBlueRight");
@@ -284,12 +284,12 @@ public class RobotContainer {
       //Here, we create a set of commands that happen in sequence.
       return Commands.sequence(
         drivebase.SetPose(blueRightStartingPose),
-        drivebase.driveToPose(blueOutpostPose),
+        drivebase.driveToPose(blueOutpostPose, 0.2),
         harvestor.Extend(),
         harvestor.Intake().withTimeout(2),
-        drivebase.driveToPose(blueRightStartingPose),
+        drivebase.driveToPose(blueRightStartingPose, 0.2),
         new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5),
-        drivebase.driveToPose(blueOutpostPose).withTimeout(0.3)
+        drivebase.driveToPose(blueOutpostPose,0.2).withTimeout(0.3)
       );
 
     }
@@ -310,29 +310,12 @@ public class RobotContainer {
     }
 
 
-    /*
-    if("Left".equals(m_autoChooser.getSelected())){
+    
+    if("OutPostCollectAndShoot".equals(m_autoChooser.getSelected())){
       return 
-      AutoBuilder.buildAuto("Test Auto")
-      .alongWith(elevator.setLevel(4))
-      .alongWith(head.setHeadSpeed(0))
-      
-      .andThen(head.setHeadSpeed(.7))
-      .andThen(new WaitCommand(1))
-      .andThen(head.setHeadSpeed(0))
-      
-      .andThen(elevator.setLevel(1))
-      .andThen(AutoBuilder.buildAuto("Human Left"))
-      
-      .andThen(new WaitCommand(1))
-      
-      .andThen(AutoBuilder.buildAuto("Second Score"))
-  
-      //.andThen(head.setHeadSpeed(.2))
-      
-      ;
+      AutoBuilder.buildAuto("OutPostCollectAndShoot");
     }
-*/
+
 
 
 
