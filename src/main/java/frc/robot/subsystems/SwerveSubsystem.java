@@ -59,11 +59,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
   SwerveDrive swerveDrive;
-  
-
   LimelightSubsystem limelight;
-
-
 
   private final Field2d field = new Field2d();
   private final PIDController headingPID = new PIDController(3.0, 0.1, 0.3); //used for auto-lock on rotation
@@ -71,24 +67,18 @@ public class SwerveSubsystem extends SubsystemBase {
   //aim line to show current target
   Translation2d target = new Translation2d(0.5,0.5);
   private final FieldObject2d aimLine = field.getObject("AimLine");
-  private final NetworkTable llTable;
 
   public SwerveSubsystem(LimelightSubsystem limelight) {
     try{
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
-      
-      
-      
       this.limelight = limelight;
-      llTable = NetworkTableInstance.getDefault().getTable("limelight");
-
 
       //stddevs for limelight
       swerveDrive.setVisionMeasurementStdDevs(
           VecBuilder.fill(
-              0.2,
-              0.2,
-              Units.degreesToRadians(5)
+              limelight.getXYStdDev(),
+              limelight.getXYStdDev(),
+              limelight.getRotStdDev()
           )
       );
 
@@ -97,9 +87,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
       //used for auto-lock on rotation
       headingPID.enableContinuousInput(-Math.PI, Math.PI);
-      headingPID.setTolerance(Units.degreesToRadians(3));
-
-
+      headingPID.setTolerance(Units.degreesToRadians(2));
 
 
     }catch(Exception e){
@@ -362,45 +350,41 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     //handle limelight
     if(!edu.wpi.first.wpilibj.RobotBase.isSimulation()){ //ensure we are not inside a simulation
+
+      //dynamic standard deviations.
+      if (limelight.hasReliableTarget()) {
+      Pose2d visionPose = limelight.getBotPose2d();
+      if (visionPose != null) {
+
+        Pose2d currentPose = getPose();
+
+        double translationError =
+            currentPose.getTranslation()
+                       .getDistance(visionPose.getTranslation());
+
+        double xyStdDev = limelight.getXYStdDev();
+        double rotStdDev = limelight.getRotStdDev();
+
+        // Smooth adaptive scaling
+        double errorScale = 1.0 + (translationError * 1.5);
+        errorScale = Math.min(errorScale, 5.0);
+
+        xyStdDev *= errorScale;
+        rotStdDev *= errorScale;
+
+        swerveDrive.setVisionMeasurementStdDevs(
+            VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev)
+        );
+
+        double timestamp =
+            Timer.getFPGATimestamp() - limelight.getLatencySeconds();
+
+        swerveDrive.addVisionMeasurement(visionPose, timestamp);
+    }
+}
       
-      //basic method, standard deviations (level of vision trust) are fixed.
-      if (limelight.hasReliableTarget()) {
-        Pose2d visionPose = limelight.getBotPose2d();
-        if (visionPose != null) {
-          double timestamp = Timer.getFPGATimestamp() - limelight.getLatencySeconds();
-          swerveDrive.addVisionMeasurement(visionPose, timestamp);
-        }
-      }
-
-      //dynamic standard deviations. Trust more the closer we are
-      if (limelight.hasReliableTarget()) {
-        Pose2d visionPose = limelight.getBotPose2d();
-        if (visionPose != null) {
-          double avgDist = llTable.getEntry("avgdist").getDouble(0);
-          double tagCount = llTable.getEntry("tagcount").getDouble(0);
-
-          double xyStdDev = 0.05 + (avgDist * 0.05);
-          double rotStdDev = Units.degreesToRadians(2 + avgDist * 1.5);
-
-          if (tagCount >= 2) {
-              xyStdDev *= 0.6;
-              rotStdDev *= 0.6;
-          }
-
-          swerveDrive.setVisionMeasurementStdDevs(
-              VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev)
-          );
-
-          double timestamp = Timer.getFPGATimestamp() - limelight.getLatencySeconds();
-          swerveDrive.addVisionMeasurement(visionPose, timestamp);
-        }
-      }
     }
 
-
-      
-      
-    
 
     //publish the field to elastic (dashboard)
     field.setRobotPose(swerveDrive.getPose());
