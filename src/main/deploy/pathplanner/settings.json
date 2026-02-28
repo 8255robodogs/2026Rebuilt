@@ -1,13 +1,13 @@
 {
-  "robotWidth": 0.9,
-  "robotLength": 0.9,
+  "robotWidth": 0.889,
+  "robotLength": 0.889,
   "holonomicMode": true,
   "pathFolders": [],
   "autoFolders": [],
-  "defaultMaxVel": 3.0,
-  "defaultMaxAccel": 3.0,
-  "defaultMaxAngVel": 540.0,
-  "defaultMaxAngAccel": 540.0,
+  "defaultMaxVel": 0.5,
+  "defaultMaxAccel": 0.25,
+  "defaultMaxAngVel": 90.0,
+  "defaultMaxAngAccel": 45.0,
   "defaultNominalVoltage": 12.0,
   "robotMass": 74.088,
   "robotMOI": 6.883,
@@ -28,5 +28,7 @@
   "brModuleY": -0.273,
   "bumperOffsetX": 0.0,
   "bumperOffsetY": 0.0,
-  "robotFeatures": []
+  "robotFeatures": [
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":0.6,\"y\":0.0},\"size\":{\"width\":0.8,\"length\":0.29},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}"
+  ]
 }

@@ -6,6 +6,7 @@ import frc.robot.commands.RebuiltAutoShoot;
 import frc.robot.subsystems.RebuiltShooterSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.RebuiltClimberSubsystem;
+import frc.robot.subsystems.CandleLedSubsystem;
 import frc.robot.subsystems.HarvestorSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
@@ -46,6 +47,7 @@ public class RobotContainer {
   //used for DPAD driving
   public double creepSpeed = 0.2;
 
+  
 
   // The robot's subsystems and commands are defined here...
   private final LimelightSubsystem limelight = new LimelightSubsystem();
@@ -53,7 +55,8 @@ public class RobotContainer {
   private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem(drivebase);
   private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
   private final RebuiltClimberSubsystem climber = new RebuiltClimberSubsystem();
-  
+  //private final CandleLedSubsystem candle = new CandleLedSubsystem();
+
   //declare the controllers
   private final CommandXboxController m_driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   private final CommandXboxController m_operatorController = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
@@ -91,6 +94,7 @@ public class RobotContainer {
 
   public RobotContainer() {
     //Explains the robot to pathplanner so it can be used to drive paths.
+    registerCommandsToBeUsableInPathPlanner();
     drivebase.setupPathPlanner();
 
     //create the camera
@@ -100,6 +104,7 @@ public class RobotContainer {
     
     //registers controls
     configureBindings();
+
     configureAutos();
   }
   
@@ -213,6 +218,22 @@ public class RobotContainer {
 
   } 
 
+  private void registerCommandsToBeUsableInPathPlanner(){
+    
+    NamedCommands.registerCommand("ExtendHarvester", harvestor.Extend());
+
+    NamedCommands.registerCommand("RetractHarvester", harvestor.Retract());
+
+    NamedCommands.registerCommand("StartIntake", harvestor.PathPlannerStartIntake());
+
+    NamedCommands.registerCommand("StopIntake", harvestor.PathPlannerStopIntake());
+
+    NamedCommands.registerCommand("Shoot", new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5));
+    
+    
+
+  }
+
   private void configureAutos(){
     
     //m_autoChooser is the component on our dashboard that lets us choose an auto routine we want to run
@@ -221,8 +242,8 @@ public class RobotContainer {
     m_autoChooser.setDefaultOption("Left", "Left");
     m_autoChooser.addOption("Middle", "Middle");
     m_autoChooser.addOption("MiddleLeft", "MiddleLeft");
-    m_autoChooser.addOption("MiddleRight", "MiddleRight");
-    m_autoChooser.addOption("BlueLeft","BlueLeft");
+    m_autoChooser.addOption("Shooter Test", "Shooter Test");
+    m_autoChooser.addOption("Harvestor Test","Harvestor Test");
     m_autoChooser.addOption("RebuiltBlueRight", "RebuiltBlueRight");
 
     //Second, we add that data to the dashboard all at once
@@ -273,8 +294,20 @@ public class RobotContainer {
 
     }
 
+    if("Harvestor Test".equals(m_autoChooser.getSelected())){
+      return Commands.sequence(
+        harvestor.Extend(),
+        new WaitCommand(2),
+        harvestor.Retract()
 
+      );
+    }
 
+    if("Shooter Test".equals(m_autoChooser.getSelected())){
+      return Commands.sequence(
+        new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5)
+      );
+    }
 
 
     /*
@@ -299,9 +332,9 @@ public class RobotContainer {
       
       ;
     }
-
-
 */
+
+
 
    
     return Commands.none();

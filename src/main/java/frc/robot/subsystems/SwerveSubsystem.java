@@ -404,7 +404,7 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     //publish the field to elastic (dashboard)
     field.setRobotPose(swerveDrive.getPose());
-    aimLine.setPoses(getPose(), new Pose2d(modifyATargetForMovement(getHubOrIdealShuttleTarget()), new Rotation2d(0)));
+    aimLine.setPoses(getPose(), new Pose2d(getHubOrIdealShuttleTarget(), new Rotation2d(0)));
     
     //publish our location
     SmartDashboard.putNumber("Pose X", getPose().getX());
@@ -450,7 +450,6 @@ public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
 
     // Get target translation
     Translation2d target = getHubOrIdealShuttleTarget();
-    target = modifyATargetForMovement(target);
 
     // Current pose
     Pose2d pose = getPose();

@@ -39,13 +39,13 @@ public class LimelightSubsystem extends SubsystemBase {
         //make sure we are calculating with a certain number of tags
         double tagCount = table.getEntry("tagcount").getDouble(0);
         if (tagCount < minimumTagsForVisionToBeTrusted){
-            result = false;
+            //result = false;
         }
 
         //don't trust tag readings if the average distance is too far away
         double avgDist = table.getEntry("avgdist").getDouble(0);
         if (avgDist > maximumAverageTagDistanceToTrust) {
-            result = false;
+            //result = false;
         }
 
         

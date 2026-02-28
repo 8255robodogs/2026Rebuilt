@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer; //Timer.getFPGATimestamp()
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -30,7 +31,7 @@ public class CandleLedSubsystem extends SubsystemBase {
 
     private LedMode currentMode = LedMode.OFF;
 
-    private final int ledCount = 60;
+    private final int ledCount = 72 ;
 
     private double blinkInterval = 0.5;
     private boolean blinkState = false;
@@ -42,7 +43,11 @@ public class CandleLedSubsystem extends SubsystemBase {
         //set up our config
         CANdleConfiguration config = new CANdleConfiguration();
         config.LED.BrightnessScalar = 0.7;
-        config.LED.StripType = com.ctre.phoenix6.signals.StripTypeValue.RGB;
+        config.LED.StripType = com.ctre.phoenix6.signals.StripTypeValue.GRB;
+
+        //rgb
+        //BRG
+
 
         //apply the config
         candle.getConfigurator().apply(config);
@@ -73,7 +78,35 @@ public class CandleLedSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
 
+        if(DriverStation.isTeleopEnabled()){
+            setSolidColor(0, 50, 0);
+        }else if(DriverStation.isTeleop()){
+            if(isRedAlliance()){
+                setSolidColor(50, 0, 0);
+            }else{
+                setSolidColor(0, 0, 50);
+            }
+        }
+
+        
+        
+
     }
+
+
+
+    
+    /**
+   * Checks if the alliance is red, defaults to false if alliance isn't available.
+   *
+   * @return true if the red alliance, false if blue. Defaults to false if none is available.
+   */
+  private boolean isRedAlliance()
+  {
+    //return false;
+    var alliance = DriverStation.getAlliance();
+    return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+  }
 
 
 

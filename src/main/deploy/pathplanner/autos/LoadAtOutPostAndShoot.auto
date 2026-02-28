@@ -7,13 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "M3"
+            "pathName": "Center to Outpost"
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 0.2
+            "pathName": "OutpostToCenter"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": null
           }
         }
       ]

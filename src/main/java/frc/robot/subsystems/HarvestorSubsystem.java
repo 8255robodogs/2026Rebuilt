@@ -59,8 +59,8 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //piston
     public DoubleSolenoid piston;
-    private int pistonForwardPort = 0;
-    private int pistonReversePort = 1;
+    private int pistonForwardPort = 1;
+    private int pistonReversePort = 0;
 
     //Constructor
     public HarvestorSubsystem(){
@@ -134,6 +134,17 @@ public class HarvestorSubsystem extends SubsystemBase{
     ).finallyDo(()-> stopMotor());
     }
 
+    public Command PathPlannerStartIntake(){
+        return run(()->{
+            setMotorSpeeds(harvesterFixedSpeed);
+        });
+    }
+
+    public Command PathPlannerStopIntake(){
+        return run(()->{
+            setMotorSpeeds(0);
+        });
+    }
 
 
     public Command ModifyIntakeTargetRPMs(double rpmModification){

@@ -62,10 +62,10 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //PID settings
     private PIDController pid;
-    private final double p = 0.0005;
+    private final double p = 0.0006;
     private final double i = 0.0;
     private final double d = 0.00;
-    private final double pidErrorTolerance = 50;
+    private final double pidErrorTolerance = 100;
     private final double kV = 0.00015;  // initial guess
 
 
@@ -78,7 +78,7 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
     //Shooter data
     private double rpmCurrent = 0;
-    private double rpmTarget = 0; //temporary hardcode
+    private double rpmTarget = 0;
     private double autoRpmTarget = 2000;
     private double lowRpmTarget = 3000;
     private double highRpmTarget = 4500;
@@ -153,23 +153,21 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
         //update rpmTarget based on distance to the goal
         if(drivebase.distanceToMyTarget() > 0){
-            autoRpmTarget = 2400;
+            autoRpmTarget = 2500;
         }
-        if(drivebase.distanceToMyTarget() > 1.8){
-            autoRpmTarget = 2400;
+        if(drivebase.distanceToMyTarget() >= 1.5){
+            autoRpmTarget = 2500;
         }
-        if(drivebase.distanceToMyTarget() > 2.15){
-            autoRpmTarget = 2800;
+        if(drivebase.distanceToMyTarget() >= 2){
+            autoRpmTarget = 2900;
         }
-        if(drivebase.distanceToMyTarget() > 2.7){
-            autoRpmTarget = 3100;
+        if(drivebase.distanceToMyTarget() > 2.5){
+            autoRpmTarget = 3600;
         }
         if(drivebase.distanceToMyTarget() > 3){
-            autoRpmTarget = 3300;
+            autoRpmTarget = 4200;
         }
-        if(drivebase.distanceToMyTarget() > 3.5){
-            autoRpmTarget = 5500;
-        }
+       
 
 
         //TODO change to formula if we can
