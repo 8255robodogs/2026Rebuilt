@@ -167,8 +167,6 @@ public class RobotContainer {
 
     //Harvestor
     t_harvester.whileTrue(harvestor.Intake());
-    t_increaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(250));
-    t_decreaseHarvesterRPM.onTrue(harvestor.ModifyIntakeTargetRPMs(-250));
     t_extendHarvester.onTrue(harvestor.Extend());
     t_retractHarvester.onTrue(harvestor.Retract());
     t_driver_extend_harvester.onTrue(harvestor.Extend());
@@ -190,7 +188,7 @@ public class RobotContainer {
     m_driverController.povUpRight().whileTrue(drivebase.driveRobotRelativeCommand(creepSpeed, -creepSpeed, 0.0));
     m_driverController.povUpLeft().whileTrue(drivebase.driveRobotRelativeCommand(creepSpeed, creepSpeed, 0.0));
 
-    //set the robot's pose (its idea of where it is on the field) to 0,0 for debugging
+    //set the robot's pose (its idea of where it is on the field) to 2,2 for debugging
     t_resetPose.onTrue(drivebase.SetPose(new Pose2d(2,2, new Rotation2d(0))));
 
 
@@ -267,9 +265,9 @@ public class RobotContainer {
       AutoBuilder.buildAuto("1Outpost");
     }
 
-    if("1Outpost".equals(m_autoChooser.getSelected())){
+    if("2Depot".equals(m_autoChooser.getSelected())){
       return 
-      AutoBuilder.buildAuto("1Outpost");
+      AutoBuilder.buildAuto("2Depot");
     }
 
     

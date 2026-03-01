@@ -75,11 +75,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
       //stddevs for limelight
       swerveDrive.setVisionMeasurementStdDevs(
-          VecBuilder.fill(
-              limelight.getXYStdDev(),
-              limelight.getXYStdDev(),
-              limelight.getRotStdDev()
-          )
+        VecBuilder.fill(
+          limelight.getXYStdDev(),
+          limelight.getXYStdDev(),
+          limelight.getRotStdDev()
+        )
       );
 
       //used to draw the field in the dashboard
@@ -132,7 +132,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public Command cmdResetOdometry(Pose2d initialHolonomicPose) {
     return this.runOnce(() -> swerveDrive.resetOdometry(initialHolonomicPose));
-}
+  }
 
 
    /**
@@ -155,7 +155,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
 
-/**
+  /**
    * Checks if the alliance is red, defaults to false if alliance isn't available.
    *
    * @return true if the red alliance, false if blue. Defaults to false if none is available.
@@ -181,93 +181,67 @@ public class SwerveSubsystem extends SubsystemBase {
       } 
   }
 
-/**
+  /**
    * Returns a Command that centers the modules of the SwerveDrive subsystem.
    *
    * @return a Command that centers the modules of the SwerveDrive subsystem
    */
   public Command centerModulesCommand()
   {
-    return run(() -> Arrays.asList(swerveDrive.getModules())
-                           .forEach(it -> it.setAngle(0.0)));
+    return run(() -> Arrays.asList(swerveDrive.getModules()).forEach(it -> it.setAngle(0.0)));
+  }
+
+
+  public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
+      swerveDrive.addVisionMeasurement(visionPose, timestampSeconds);
   }
 
 
 
-public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds) {
-    swerveDrive.addVisionMeasurement(visionPose, timestampSeconds);
-}
 
-
-
-
-/**
-   * Setup AutoBuilder for PathPlanner.
-   */
-  public void setupPathPlanner()
-  {
-    // Load the RobotConfig from the GUI settings. You should probably
-    // store this in your Constants file
+  /**
+  * Setup AutoBuilder for PathPlanner.
+  */
+  public void setupPathPlanner(){
     RobotConfig config;
-    try
-    {
+    try{
       config = RobotConfig.fromGUISettings();
 
       final boolean enableFeedforward = true;
       // Configure AutoBuilder last
       AutoBuilder.configure(
-          this::getPose,
-          // Robot pose supplier
-          this::resetOdometry,
-          // Method to reset odometry (will be called if your auto has a starting pose)
-          this::getRobotVelocity,
-          // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-          (speedsRobotRelative, moduleFeedForwards) -> {
-            var speeds = new ChassisSpeeds(
-              speedsRobotRelative.vxMetersPerSecond,
-              speedsRobotRelative.vyMetersPerSecond,
-              speedsRobotRelative.omegaRadiansPerSecond);
-            if (enableFeedforward)
-            {
-              swerveDrive.drive(
-                  speeds,
-                  swerveDrive.kinematics.toSwerveModuleStates(speeds),
-                  moduleFeedForwards.linearForces()
-                               );
-            } else
-            {
-              swerveDrive.setChassisSpeeds(speeds);
-            }
-          },
-          // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-          new PPHolonomicDriveController(
-              // PPHolonomicController is the built in path following controller for holonomic drive trains
-              new PIDConstants(1, 0.000000, 0),
-              // Translation PID constants
-              new PIDConstants(1.5, 0.0000, 0)
-              // Rotation PID constants
-          ),
-          config,
-          // The robot configuration
-          () -> {
-            // Boolean supplier that controls when the path will be mirrored for the red alliance
-            // This will flip the path being followed to the red side of the field.
-            // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+        this::getPose, // Robot pose supplier
+        this::resetOdometry,// Method to reset odometry (will be called if your auto has a starting pose)
+        this::getRobotVelocity,// ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+        
+        // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+        (speedsRobotRelative, moduleFeedForwards) -> 
+        {
+          var speeds = new ChassisSpeeds(
+          speedsRobotRelative.vxMetersPerSecond,
+          speedsRobotRelative.vyMetersPerSecond,
+          speedsRobotRelative.omegaRadiansPerSecond);
+          if (enableFeedforward){
+            swerveDrive.drive(
+              speeds,
+              swerveDrive.kinematics.toSwerveModuleStates(speeds),
+              moduleFeedForwards.linearForces()
+            );
+          }else{
+            swerveDrive.setChassisSpeeds(speeds);
+          }
+        },
+        // PPHolonomicController is the built in path following controller for holonomic drive trains
+        new PPHolonomicDriveController(    
+          new PIDConstants(1, 0.000000, 0), // Translation PID constants
+          new PIDConstants(1.5, 0.0000, 0)  // Rotation PID constants
+        ),
+        config,// The robot configuration
+        this::isRedAlliance, //Boolean supplier for if we are red alliance
+        this // Reference to this subsystem to set requirements
+      );
 
-            var alliance = DriverStation.getAlliance();
-            if (alliance.isPresent())
-            {
-              return alliance.get() == DriverStation.Alliance.Red;
-            }
-            return false;
-          },
-          this
-          // Reference to this subsystem to set requirements
-                           );
-
-    } catch (Exception e)
-    {
-      // Handle exception as needed
+    } catch (Exception e){
       e.printStackTrace();
     }
 

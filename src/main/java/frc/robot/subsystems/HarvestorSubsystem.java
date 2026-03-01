@@ -154,21 +154,6 @@ public class HarvestorSubsystem extends SubsystemBase{
 }
 
 
-
-public Command AssistConveyor() {
-    return run(
-        () -> {
-            double output = velocityPID.calculate(getRPM(), -targetRPM);
-            output = MathUtil.clamp(output, -1.0, 1.0);
-            setMotorSpeeds(output);
-        }
-    ).finallyDo(()->stopMotor());
-    }
-    
-
-
-
-
     //piston commands
 
     public Command Extend(){
