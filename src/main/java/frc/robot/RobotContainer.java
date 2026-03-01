@@ -191,7 +191,6 @@ public class RobotContainer {
     //set the robot's pose (its idea of where it is on the field) to 2,2 for debugging
     t_resetPose.onTrue(drivebase.SetPose(new Pose2d(2,2, new Rotation2d(0))));
 
-
     //Shooter
     t_shooterAutoSpeed.whileTrue(shooter.ShootAtAutoRpm());
     t_shooterHighSpeed.whileTrue(shooter.ShootAtHighRpm());
