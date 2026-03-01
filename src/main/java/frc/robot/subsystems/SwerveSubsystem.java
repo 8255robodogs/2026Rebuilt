@@ -62,7 +62,7 @@ public class SwerveSubsystem extends SubsystemBase {
   LimelightSubsystem limelight;
 
   private final Field2d field = new Field2d();
-  private final PIDController headingPID = new PIDController(3.0, 0.1, 0.3); //used for auto-lock on rotation
+  private final PIDController headingPID = new PIDController(8.0, 0.1, 1); //used for auto-lock on rotation
 
   //aim line to show current target
   Translation2d target = new Translation2d(0.5,0.5);
@@ -87,7 +87,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
       //used for auto-lock on rotation
       headingPID.enableContinuousInput(-Math.PI, Math.PI);
-      headingPID.setTolerance(Units.degreesToRadians(2));
+      headingPID.setTolerance(Units.degreesToRadians(4));
 
 
     }catch(Exception e){

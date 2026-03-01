@@ -54,7 +54,7 @@ public class RobotContainer {
   private final SwerveSubsystem drivebase = new SwerveSubsystem(limelight);
   private final RebuiltShooterSubsystem shooter = new RebuiltShooterSubsystem(drivebase);
   private final HarvestorSubsystem harvestor = new HarvestorSubsystem();
-  private final RebuiltClimberSubsystem climber = new RebuiltClimberSubsystem();
+  //private final RebuiltClimberSubsystem climber = new RebuiltClimberSubsystem();
   //private final CandleLedSubsystem candle = new CandleLedSubsystem();
 
   //declare the controllers
@@ -203,8 +203,8 @@ public class RobotContainer {
     t_decreaseShooterManualSpeed.onTrue(shooter.ModifyManualShootingRPM(-100));
 
     //Climber
-    t_climber_up.onTrue(climber.Extend());
-    t_climber_down.onTrue(climber.Retract());
+    //t_climber_up.onTrue(climber.Extend());
+    //t_climber_down.onTrue(climber.Retract());
 
 
     //create a trigger for when any shooting button is pressed, then make sure when that trigger isn't happening, we stop shooting
@@ -239,12 +239,9 @@ public class RobotContainer {
     //m_autoChooser is the component on our dashboard that lets us choose an auto routine we want to run
     
     //First, we add names for our routines that we can select
-    m_autoChooser.setDefaultOption("Left", "Left");
-    m_autoChooser.addOption("Middle", "Middle");
-    m_autoChooser.addOption("OutPostCollectAndShoot", "OutPostCollectAndShoot");
-    m_autoChooser.addOption("Shooter Test", "Shooter Test");
+    m_autoChooser.setDefaultOption("1Outpost", "1Outpost");
+    m_autoChooser.addOption("2Depot", "2Depot");
     m_autoChooser.addOption("Harvestor Test","Harvestor Test");
-    m_autoChooser.addOption("RebuiltBlueRight", "RebuiltBlueRight");
 
     //Second, we add that data to the dashboard all at once
     SmartDashboard.putData("Auto Choices", m_autoChooser);
@@ -265,41 +262,22 @@ public class RobotContainer {
     //This is where the logic and commands inside our autonomous routines goes.
     //We simply check if the autonomous chooser matches one of these names, then do those actions.
 
-
-    if("RebuiltBlueRight".equals(m_autoChooser.getSelected())){
-      
-      //This block of code isn't a command, this is defining a "pose", which is an x,y location on the field and a rotation. We will use this pose later.
-      // 0,0 is the bottom left of the field, or you could say the blue corner which is to the blue alliance's right while they are looking at the field.
-      //increasing x goes towards the red alliance, increasing y goes to the blue alliance's left.
-      Pose2d blueRightStartingPose = new Pose2d(
-        new Translation2d(2,2),
-        new Rotation2d(0)
-      );
-
-      Pose2d blueOutpostPose = new Pose2d(
-        new Translation2d(0.33,.7),
-        new Rotation2d(0)
-      );
-
-      //Here, we create a set of commands that happen in sequence.
-      return Commands.sequence(
-        drivebase.SetPose(blueRightStartingPose),
-        drivebase.driveToPose(blueOutpostPose, 0.2),
-        harvestor.Extend(),
-        harvestor.Intake().withTimeout(2),
-        drivebase.driveToPose(blueRightStartingPose, 0.2),
-        new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5),
-        drivebase.driveToPose(blueOutpostPose,0.2).withTimeout(0.3)
-      );
-
+    if("1Outpost".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("1Outpost");
     }
 
+    if("1Outpost".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("1Outpost");
+    }
+
+    
     if("Harvestor Test".equals(m_autoChooser.getSelected())){
       return Commands.sequence(
         harvestor.Extend(),
         new WaitCommand(2),
         harvestor.Retract()
-
       );
     }
 
@@ -309,17 +287,7 @@ public class RobotContainer {
       );
     }
 
-
-    
-    if("OutPostCollectAndShoot".equals(m_autoChooser.getSelected())){
-      return 
-      AutoBuilder.buildAuto("OutPostCollectAndShoot");
-    }
-
-
-
-
-   
+    //default if there is no match
     return Commands.none();
     
 

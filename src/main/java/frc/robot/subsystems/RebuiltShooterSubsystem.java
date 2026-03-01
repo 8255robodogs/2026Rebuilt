@@ -152,6 +152,8 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         
 
         //update rpmTarget based on distance to the goal
+        //this is the manual version.
+        //This can stay in place, but if the formula below is enabled, that value will override this
         if(drivebase.distanceToMyTarget() > 0){
             autoRpmTarget = 2500;
         }
@@ -161,17 +163,15 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         if(drivebase.distanceToMyTarget() >= 2){
             autoRpmTarget = 2900;
         }
-        if(drivebase.distanceToMyTarget() > 2.5){
+        if(drivebase.distanceToMyTarget() >= 2.5){
             autoRpmTarget = 3600;
         }
-        if(drivebase.distanceToMyTarget() > 3){
+        if(drivebase.distanceToMyTarget() >= 3){
             autoRpmTarget = 4200;
         }
        
-
-
-        //TODO change to formula if we can
-        //autoRpmTarget = (drivebase.distanceToMyTarget() * 1360.5 ) + 478;
+        //auto rpm setting with a formula
+        autoRpmTarget = (drivebase.distanceToMyTarget() * 1133 ) + 800;
 
 
         //CLAMP VALUES
@@ -251,7 +251,9 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
 
 
 
-
+    public boolean closeToTargetRPM(){
+        return pid.getError() < 250 && rpmTarget > 1500;
+    }
 
 
 
