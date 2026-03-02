@@ -48,14 +48,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
   //rebuilt specific positioning
   private final Translation2d blueHub = new Translation2d(4.611624,4.021328);
-  private final Translation2d blueLeftShuttleTarget = new Translation2d(2.305812, 6);
-  private final Translation2d blueRightShuttleTarget = new Translation2d(2.305812, 2);
-  private final Pose2d blueOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(0)); 
+  private final Translation2d blueLeftShuttleTarget = new Translation2d(1.305812, 5);
+  private final Translation2d blueRightShuttleTarget = new Translation2d(1.305812, 3);
 
-  private final Translation2d redLeftShuttleTarget = new Translation2d(14.2, 2);
+  private final Translation2d redLeftShuttleTarget = new Translation2d(15.2, 3);
   private final Translation2d redHub = new Translation2d(11.901424, 4.021328);
-  private final Translation2d redRightShuttleTarget = new Translation2d(14.2, 6);
-  private final Pose2d redOutpostRobotPose = new Pose2d(new Translation2d(2,2),new Rotation2d(180)); 
+  private final Translation2d redRightShuttleTarget = new Translation2d(15.2, 5);
 
 
   SwerveDrive swerveDrive;
@@ -458,13 +456,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
   //2026 Rebuilt specific
-  public Command driveToMyAllianceOutpost(){
-    if(isRedAlliance()){
-      return run(() -> driveToPose(redOutpostRobotPose, 0.2));
-    }else{
-      return run(() -> driveToPose(blueOutpostRobotPose, 0.2));
-    }
-  }
+
 
   public double distanceToMyTarget(){
       return getPose().getTranslation().getDistance(getHubOrIdealShuttleTarget());

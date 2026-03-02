@@ -119,6 +119,7 @@ public class RobotContainer {
     Trigger t_autoAim = m_driverController.rightStick();
     Trigger t_driver_extend_harvester = m_driverController.rightBumper();
     Trigger t_driver_retract_harvester = m_driverController.leftBumper();
+    Trigger t_driver_reverse_harvester = m_driverController.back();
 
     //-----OPERATOR CONTROLLER CONTROLLER (CONTROLLER ONE)-----
     Trigger t_shooterAutoSpeed = m_operatorController.x();
@@ -166,16 +167,17 @@ public class RobotContainer {
     
 
     //Harvestor
-    t_harvester.whileTrue(harvestor.Intake());
+    t_harvester.whileTrue(harvestor.IntakeWithPID());
     t_extendHarvester.onTrue(harvestor.Extend());
     t_retractHarvester.onTrue(harvestor.Retract());
     t_driver_extend_harvester.onTrue(harvestor.Extend());
     t_driver_retract_harvester.onTrue(harvestor.Retract());
+    t_driver_reverse_harvester.whileTrue(harvestor.ReverseHarvester());
 
 
     //Conveyor & kicker
     t_conveyorAndKicker.whileTrue(shooter.FeedShooter());
-    //t_conveyorAndKicker.whileTrue(harvestor.Intake());
+    t_conveyorAndKicker.whileTrue(harvestor.IntakeWithFixedPower());
 
     //DPAD CREEPING
     m_driverController.povRight().whileTrue(drivebase.driveRobotRelativeCommand(0.0, -creepSpeed, 0.0));
@@ -238,6 +240,7 @@ public class RobotContainer {
     //First, we add names for our routines that we can select
     m_autoChooser.setDefaultOption("1Outpost", "1Outpost");
     m_autoChooser.addOption("2Depot", "2Depot");
+        m_autoChooser.addOption("3LeftCenter", "3LeftCenter");
     m_autoChooser.addOption("Harvestor Test","Harvestor Test");
 
     //Second, we add that data to the dashboard all at once
@@ -269,7 +272,12 @@ public class RobotContainer {
       AutoBuilder.buildAuto("2Depot");
     }
 
-    
+     if("3LeftCenter".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("3LeftCenter");
+    }
+
+
     if("Harvestor Test".equals(m_autoChooser.getSelected())){
       return Commands.sequence(
         harvestor.Extend(),

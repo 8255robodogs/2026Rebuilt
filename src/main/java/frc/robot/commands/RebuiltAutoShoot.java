@@ -20,6 +20,7 @@ public class RebuiltAutoShoot extends SequentialCommandGroup {
                Commands.parallel(
                 shooter.ShootAtAutoRpm(),
                 shooter.FeedShooter(),
+                harvester.IntakeWithFixedPower(),
                 drivebase.driveFacingTarget(()->0.0, ()->0.0)
                )
         );

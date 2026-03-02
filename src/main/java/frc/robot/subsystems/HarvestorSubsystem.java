@@ -1,58 +1,37 @@
 package frc.robot.subsystems;
 
 
-import static edu.wpi.first.units.Units.Value;
 
-import java.util.Map;
-import java.util.function.BooleanSupplier;
-
-import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
 import com.revrobotics.spark.SparkMax;
+
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.networktables.BooleanEntry;
-import edu.wpi.first.networktables.DoubleEntry;
-import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-import edu.wpi.first.wpilibj.shuffleboard.WidgetType;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class HarvestorSubsystem extends SubsystemBase{
 
     //motor settings
-    private final SparkFlex motorLeft;
-    private final SparkFlex motorRight;
+    private final SparkMax motorLeft;
+    private final SparkMax motorRight;
     private final int motorLeftCanId = 4;
     private final int motorRightCanId = 3;
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
-    private double harvesterFixedSpeed = 0.5;
+    private double harvesterFixedSpeed = 0.6;
+    private double harvesterReverseSpeed = -1.0;
 
-    private static final double BASE_RPM = 2000;
+    private static final double BASE_RPM = 1600;
     private double targetRPM = BASE_RPM;
-    private double rpmErrorTolerance = 400;
-    private final PIDController velocityPID = new PIDController(0.00008, 0.0, 0.0);
+    private double rpmErrorTolerance = 200;
+    private final PIDController velocityPID = new PIDController(0.0001, 0.0, 0.0);
     
     //pressure control module (PCM)
     private int pcmCanId = Constants.pcmCanId;
@@ -65,8 +44,10 @@ public class HarvestorSubsystem extends SubsystemBase{
     //Constructor
     public HarvestorSubsystem(){
         //motors
-        motorLeft = new SparkFlex(motorLeftCanId, MotorType.kBrushless);
-        motorRight = new SparkFlex(motorRightCanId, MotorType.kBrushless);
+        motorLeft = new SparkMax(motorLeftCanId, MotorType.kBrushless);
+        motorRight = new SparkMax(motorRightCanId, MotorType.kBrushless);
+
+
         velocityPID.setTolerance(rpmErrorTolerance);
 
         //piston
@@ -75,6 +56,8 @@ public class HarvestorSubsystem extends SubsystemBase{
             PneumaticsModuleType.CTREPCM,
             pistonForwardPort,
             pistonReversePort );
+
+        
     }
 
 
@@ -82,6 +65,7 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //use this to set the motor speeds at once. notice the right motor is inverted
     private void setMotorSpeeds(double speed){
+        //set both motors to the same. we will handle reversing them in the motor controller's configuration
         motorLeft.set(speed);
         motorRight.set(speed);
         harvestorRunning = true;
@@ -107,6 +91,9 @@ public class HarvestorSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("Intake real RPM", getRPM());
         SmartDashboard.putBoolean("Intake Extended", piston.get() == DoubleSolenoid.Value.kForward);
         SmartDashboard.putBoolean("Harvester", harvestorRunning);
+        SmartDashboard.putNumber("HarvesterLeftCurrent", motorLeft.getOutputCurrent());
+        SmartDashboard.putNumber("HarvesterRightCurrent", motorRight.getOutputCurrent());
+        
     }
 
     
@@ -114,34 +101,60 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //Wheel commands
 
-    public Command Intake() {
+    public Command IntakeWithFixedPower() {
     return run(
         () -> {
-            //calcualte values with pid
-            // double output = velocityPID.calculate(getRPM(), targetRPM);
-            
-            // //apply feed forward
-            // double kF = 1.0 / 6000.0;  // tune this
-            // double feedforward = targetRPM * kF;
-            // output += feedforward;
-
-            // //clamp values
-            // output = MathUtil.clamp(output, 0, 1);
-            // setMotorSpeeds(output);
-
-            setMotorSpeeds(harvesterFixedSpeed);
+            intakeWithFixedPower();
         }
     ).finallyDo(()-> stopMotor());
     }
 
-    public Command PathPlannerStartIntake(){
+    public Command IntakeWithPID(){
         return run(()->{
+            intakeWithPID();
+        }).finallyDo(()->stopMotor());
+
+    }
+
+    public Command ReverseHarvester(){
+
+        return run(
+            ()->{
+                setMotorSpeeds(harvesterReverseSpeed);
+            }
+        ).finallyDo(()->{
+            stopMotor();
+        });
+    }
+    
+    private void intakeWithFixedPower(){
+        setMotorSpeeds(harvesterFixedSpeed);
+    }
+
+    private void intakeWithPID(){
+        //calcualte values with pid
+        double output = velocityPID.calculate(getRPM(), targetRPM);
+            
+        //apply feed forward
+        double feedforward = .6;
+        output += feedforward;
+
+        //clamp values
+        output = MathUtil.clamp(output, 0, 1);
+        SmartDashboard.putNumber("Harvester PID Output", output);
+        setMotorSpeeds(output);
+    }
+
+
+
+    public Command PathPlannerStartIntake(){
+        return runOnce(()->{
             setMotorSpeeds(harvesterFixedSpeed);
         });
     }
 
     public Command PathPlannerStopIntake(){
-        return run(()->{
+        return runOnce(()->{
             setMotorSpeeds(0);
         });
     }

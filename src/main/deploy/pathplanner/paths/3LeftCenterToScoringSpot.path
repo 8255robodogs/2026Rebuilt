@@ -1,0 +1,63 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.7454698795180725,
+        "y": 4.778084337349397
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.778253012048193,
+        "y": 6.001987951807228
+      },
+      "isLocked": false,
+      "linkedName": "LeftCenterHarvestEnd"
+    },
+    {
+      "anchor": {
+        "x": 2.904493975903614,
+        "y": 5.149626506024097
+      },
+      "prevControl": {
+        "x": 2.0630602409638557,
+        "y": 6.001987951807228
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.38897637795275863,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 0.6535433070866042,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 2.5,
+    "maxAngularVelocity": 110.0,
+    "maxAngularAcceleration": 110.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -35.27242144859842
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -151.29404745659903
+  },
+  "useDefaultConstraints": false
+}
