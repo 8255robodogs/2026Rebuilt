@@ -167,7 +167,7 @@ public class RobotContainer {
     
 
     //Harvestor
-    t_harvester.whileTrue(harvestor.IntakeWithPID());
+    t_harvester.whileTrue(harvestor.IntakeWithFixedPower());
     t_extendHarvester.onTrue(harvestor.Extend());
     t_retractHarvester.onTrue(harvestor.Retract());
     t_driver_extend_harvester.onTrue(harvestor.Extend());
@@ -228,6 +228,10 @@ public class RobotContainer {
     NamedCommands.registerCommand("StopIntake", harvestor.PathPlannerStopIntake());
 
     NamedCommands.registerCommand("Shoot", new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(5));
+
+    NamedCommands.registerCommand("Shoot2sec", new RebuiltAutoShoot(shooter, harvestor, drivebase).withTimeout(2));
+
+   //Need to add auto align command
     
     
 
@@ -240,7 +244,9 @@ public class RobotContainer {
     //First, we add names for our routines that we can select
     m_autoChooser.setDefaultOption("1Outpost", "1Outpost");
     m_autoChooser.addOption("2Depot", "2Depot");
-        m_autoChooser.addOption("3LeftCenter", "3LeftCenter");
+    m_autoChooser.addOption("3LeftCenter", "3LeftCenter");
+    m_autoChooser.addOption("4RightCenter", "4RightCenter");
+    m_autoChooser.addOption("5ShootDepot", "5ShootDepot");
     m_autoChooser.addOption("Harvestor Test","Harvestor Test");
 
     //Second, we add that data to the dashboard all at once
@@ -275,6 +281,16 @@ public class RobotContainer {
      if("3LeftCenter".equals(m_autoChooser.getSelected())){
       return 
       AutoBuilder.buildAuto("3LeftCenter");
+    }
+
+    if("4RightCenter".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("4RightCenter");
+    }
+
+    if("5ShootDepot".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("5ShootDepot");
     }
 
 

@@ -7,13 +7,13 @@
         {
           "type": "named",
           "data": {
-            "name": "StartIntake"
+            "name": "Shoot2sec"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "3LeftToCenter"
+            "pathName": "5-1"
           }
         },
         {
@@ -23,9 +23,21 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "StartIntake"
+          }
+        },
+        {
           "type": "path",
           "data": {
-            "pathName": "3LeftCenterHarvesting"
+            "pathName": "5-2"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.5
           }
         },
         {
@@ -35,33 +47,27 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "3LeftCenterToScoringSpot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Shoot2sec"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "RetractHarvester"
           }
         },
         {
-          "type": "named",
+          "type": "path",
           "data": {
-            "name": "Shoot2sec"
+            "pathName": "5-3"
           }
         },
         {
           "type": "named",
           "data": {
             "name": "Shoot"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5-4"
           }
         }
       ]

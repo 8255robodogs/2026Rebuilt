@@ -25,7 +25,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
-    private double harvesterFixedSpeed = 0.6;
+    private double harvesterFixedSpeed = 1;
     private double harvesterReverseSpeed = -1.0;
 
     private static final double BASE_RPM = 1600;
@@ -65,9 +65,9 @@ public class HarvestorSubsystem extends SubsystemBase{
 
     //use this to set the motor speeds at once. notice the right motor is inverted
     private void setMotorSpeeds(double speed){
-        //set both motors to the same. we will handle reversing them in the motor controller's configuration
+        //set both motors to the same. we will handle reversing one in the motor controller's configuration
         motorLeft.set(speed);
-        motorRight.set(speed);
+        //motorRight.set(speed);
         harvestorRunning = true;
     }
 
