@@ -1,6 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.HarvestorSubsystem;
@@ -16,8 +17,10 @@ public class RebuiltAutoShoot extends SequentialCommandGroup {
         SwerveSubsystem drivebase
     ){
         addCommands(
-               shooter.GetShooterUpToAutoRpmSpeed().withTimeout(1.5),
                
+            
+            drivebase.driveFacingTarget( ()->0.0, ()->0.0 ).withDeadline(shooter.GetShooterUpToAutoRpmSpeed().withTimeout(1.5)),
+
                Commands.parallel(
                 shooter.ShootAtAutoRpm(),
                 shooter.FeedShooter(),

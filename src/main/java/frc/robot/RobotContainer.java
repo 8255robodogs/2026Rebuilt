@@ -247,6 +247,8 @@ public class RobotContainer {
     m_autoChooser.addOption("3LeftCenter", "3LeftCenter");
     m_autoChooser.addOption("4RightCenter", "4RightCenter");
     m_autoChooser.addOption("5ShootDepot", "5ShootDepot");
+    m_autoChooser.addOption("6ShootBackup", "6ShootBackup");
+    m_autoChooser.addOption("7LowSweep", "7LowSweep");
     m_autoChooser.addOption("Harvestor Test","Harvestor Test");
 
     //Second, we add that data to the dashboard all at once
@@ -291,6 +293,16 @@ public class RobotContainer {
     if("5ShootDepot".equals(m_autoChooser.getSelected())){
       return 
       AutoBuilder.buildAuto("5ShootDepot");
+    }
+
+    if("6ShootBackup".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("6ShootBackup");
+    }
+
+    if("7LowSweep".equals(m_autoChooser.getSelected())){
+      return 
+      AutoBuilder.buildAuto("7LowSweep");
     }
 
 

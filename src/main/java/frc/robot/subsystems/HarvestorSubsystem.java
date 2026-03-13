@@ -3,9 +3,12 @@ package frc.robot.subsystems;
 
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkMax;
 
-
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
@@ -25,8 +28,8 @@ public class HarvestorSubsystem extends SubsystemBase{
     private boolean harvestorRunning = false;
 
     //pid settings for maintaining rotation speed
-    private double harvesterFixedSpeed = 1;
-    private double harvesterReverseSpeed = -1.0;
+    private double harvesterFixedSpeed = .8;
+    private double harvesterReverseSpeed = -.8;
 
     private static final double BASE_RPM = 1600;
     private double targetRPM = BASE_RPM;
@@ -46,6 +49,10 @@ public class HarvestorSubsystem extends SubsystemBase{
         //motors
         motorLeft = new SparkMax(motorLeftCanId, MotorType.kBrushless);
         motorRight = new SparkMax(motorRightCanId, MotorType.kBrushless);
+
+        SparkMaxConfig config = new SparkMaxConfig();
+        config.follow(motorLeftCanId, true);
+        //motorRight.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
 
 
         velocityPID.setTolerance(rpmErrorTolerance);
@@ -67,7 +74,7 @@ public class HarvestorSubsystem extends SubsystemBase{
     private void setMotorSpeeds(double speed){
         //set both motors to the same. we will handle reversing one in the motor controller's configuration
         motorLeft.set(speed);
-        //motorRight.set(speed);
+        motorRight.set(speed);
         harvestorRunning = true;
     }
 
@@ -89,6 +96,15 @@ public class HarvestorSubsystem extends SubsystemBase{
     public void periodic(){
         //write information to the dashboard
         SmartDashboard.putNumber("Intake real RPM", getRPM());
+
+        SmartDashboard.putNumber("Int L RPM", motorLeft.getEncoder().getVelocity());
+        SmartDashboard.putNumber("Int R RPM", motorRight.getEncoder().getVelocity());
+
+        SmartDashboard.putNumber("Int L Current", motorLeft.getOutputCurrent());
+        SmartDashboard.putNumber("Int R Current", motorRight.getOutputCurrent());
+
+        
+
         SmartDashboard.putBoolean("Intake Extended", piston.get() == DoubleSolenoid.Value.kForward);
         SmartDashboard.putBoolean("Harvester", harvestorRunning);
         SmartDashboard.putNumber("HarvesterLeftCurrent", motorLeft.getOutputCurrent());
