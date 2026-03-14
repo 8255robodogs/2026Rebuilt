@@ -7,7 +7,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Shoot2sec"
+            "name": "StartIntake"
           }
         },
         {
@@ -23,27 +23,21 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StartIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "4-2"
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StopIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "4-3"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopIntake"
           }
         },
         {

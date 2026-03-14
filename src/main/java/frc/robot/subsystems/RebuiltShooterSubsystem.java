@@ -80,8 +80,8 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
     private double rpmCurrent = 0;
     private double rpmTarget = 0;
     private double autoRpmTarget = 2000;
-    private double lowRpmTarget = 3000;
-    private double highRpmTarget = 4500;
+    private double lowRpmTarget = 2700;
+    private double highRpmTarget = 4300;
     private double manualRpmTarget = 2000;
 
     //Mode
@@ -155,19 +155,22 @@ public class RebuiltShooterSubsystem extends SubsystemBase{
         //this is the manual version.
         //This can stay in place, but if the formula below is enabled, that value will override this
         if(drivebase.distanceToMyTarget() > 0){
-            autoRpmTarget = 2500;
+            autoRpmTarget = 2700;
         }
         if(drivebase.distanceToMyTarget() >= 1.5){
-            autoRpmTarget = 2500;
+            autoRpmTarget = 2700;
         }
         if(drivebase.distanceToMyTarget() >= 2){
-            autoRpmTarget = 2900;
+            autoRpmTarget = 2700;
         }
         if(drivebase.distanceToMyTarget() >= 2.5){
-            autoRpmTarget = 3600;
+            autoRpmTarget = 3100;
         }
         if(drivebase.distanceToMyTarget() >= 3){
-            autoRpmTarget = 4200;
+            autoRpmTarget = 4300;
+        }
+         if(drivebase.distanceToMyTarget() >= 3.5){
+            autoRpmTarget = 4800;
         }
        
         //auto rpm setting with a formula
